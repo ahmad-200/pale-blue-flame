@@ -16,33 +16,34 @@ const sections = [['objective', 'What they wanted to know'], ['approach', 'How t
     <a href="#/" class="muted small">&larr; back to all experiments</a>
     <h1>{{ e.name || e.id }}</h1>
     <p class="subtitle">{{ e.title }}</p>
-    <p class="facts">
-      <span class="tag" :class="e.pillar">{{ e.pillar }}</span>
-      {{ e.kind }}<template v-if="e.where"> · {{ e.where }}</template>
-      <template v-if="e.start"> · {{ e.start }} to {{ e.end }}</template>
-      <template v-if="e.nasa_center"> · {{ e.nasa_center }}</template>
-    </p>
+    <dl class="meta">
+      <div><dt>Group</dt><dd><span class="pill" :class="e.pillar">{{ e.pillar }}</span></dd></div>
+      <div><dt>Kind</dt><dd>{{ e.kind }}</dd></div>
+      <div v-if="e.where"><dt>Where</dt><dd>{{ e.where }}</dd></div>
+      <div v-if="e.start"><dt>Dates in NASA's record</dt><dd>{{ e.start }} to {{ e.end }}</dd></div>
+      <div v-if="e.nasa_center"><dt>NASA center</dt><dd>{{ e.nasa_center }}</dd></div>
+    </dl>
     <img :src="e.image" :alt="e.title" class="photo" @error="$event.target.style.display = 'none'" />
 
-    <section class="panel found">
-      <h3>What they found</h3>
+    <section class="found">
+      <h2>What they found</h2>
       <p class="muted">We haven't written this part yet. Truth is, the results live mostly in the papers below, not in
         NASA's tables, and we want to read them before we sum them up.</p>
       <p v-if="tests.length">What we do have: <b>{{ tests.length }}</b> fires from this experiment in our table ({{ materials }}).</p>
     </section>
 
-    <section v-if="e.id === 'PSI-98' && store.saffire" class="panel">
-      <h3>The fire, as its heat sensors saw it</h3>
+    <section v-if="e.id === 'PSI-98' && store.saffire">
+      <h2>The fire, as its heat sensors saw it</h2>
       <FireReplay :data="store.saffire" />
     </section>
 
     <section v-for="[k, label] in sections" :key="k" v-show="e[k]">
-      <h3>{{ label }}</h3>
+      <h2>{{ label }}</h2>
       <p class="prose">{{ e[k] }}</p>
     </section>
 
     <section v-if="e.papers.length">
-      <h3>Read more ({{ e.papers.length }} papers)</h3>
+      <h2>Read more ({{ e.papers.length }} papers)</h2>
       <ul class="papers">
         <li v-for="p in e.papers" :key="p.title">
           <a v-if="p.doi" :href="`https://doi.org/${p.doi}`" target="_blank">{{ p.title }}</a><span v-else>{{ p.title }}</span>
@@ -52,7 +53,7 @@ const sections = [['objective', 'What they wanted to know'], ['approach', 'How t
     </section>
 
     <p class="actions">
-      <a :href="e.link" target="_blank" class="cta small">See it in NASA's database</a>
+      <a :href="e.link" target="_blank" class="cta">See it in NASA's database</a>
       <span class="muted small">Behind it: {{ e.raw_files }} raw files, {{ e.raw_size_gb }} GB of video and sensor data.</span>
     </p>
   </article>

@@ -17,7 +17,7 @@ onMounted(loadData)
 
 <template>
   <header class="top">
-    <a href="#/" class="brand">Pale Blue Flame</a>
+    <a href="#/" class="brand"><span class="brand-flame" aria-hidden="true"></span>Pale Blue Flame</a>
     <nav>
       <a href="#/" :class="{ on: route.page === '' }">Home</a>
       <a href="#/burn" :class="{ on: route.page === 'burn' }">Will it burn here?</a>

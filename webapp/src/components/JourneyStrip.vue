@@ -20,7 +20,7 @@ const dots = (s) => beeswarm(props.tests || [], s.x - 80, s.y - 6).map(n => ({ c
 </script>
 
 <template>
-  <svg viewBox="0 0 960 300" class="journey" role="img" aria-label="Earth, the Space Station, the Moon: where fires were tested">
+  <svg viewBox="0 40 960 260" class="journey" role="img" aria-label="Earth, the Space Station, the Moon: where fires were tested">
     <defs>
       <radialGradient id="pale-blue-flame" cx="50%" cy="55%" r="55%">
         <stop offset="0%" stop-color="#ffffff" stop-opacity=".95" />

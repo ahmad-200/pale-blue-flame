@@ -13,7 +13,7 @@ const pts = computed(() => props.data.points)
 const T_END = computed(() => pts.value[pts.value.length - 1].t)
 const x = computed(() => scaleLinear().domain([0, T_END.value]).range([L, W - R]))
 const y = computed(() => scaleLinear().domain([-20, max(pts.value, p => Math.max(p.s1, p.s2, p.s3, p.s4)) * 1.1]).range([H - B, T]))
-const SENSORS = [{ k: 's2', c: '#ffb454' }, { k: 's3', c: '#ff7a3c' }, { k: 's1', c: '#7fb2ff' }, { k: 's4', c: '#b18cff' }]
+const SENSORS = [{ k: 's2', c: '#F2A65A' }, { k: 's3', c: '#E8C07A' }, { k: 's1', c: '#9FD3FF' }, { k: 's4', c: '#5E9BE0' }]
 
 const now = ref(T_END.value)          // the moment shown; starts on the full picture
 const playing = ref(false)
@@ -41,7 +41,7 @@ const ticks = computed(() => range(0, T_END.value + 1, 120))   // a mark every 2
       <div v-for="(s, i) in SENSORS" :key="s.k" class="sensor" :style="{ '--c': s.c, '--h': heat(s.k) }">
         <span class="bulb"></span><small>sensor {{ s.k.slice(1) }}</small>
       </div>
-      <button class="cta small" @click="play" :disabled="playing">{{ playing ? `Burning… ${minutes}` : '▶ Replay the fire' }}</button>
+      <button class="cta" @click="play" :disabled="playing">{{ playing ? `Burning… ${minutes}` : 'Replay the fire' }}</button>
     </div>
     <svg :viewBox="`0 0 ${W} ${H}`" class="replay-chart" role="img" aria-label="Heat sensor readings during a real NASA fire">
       <g v-for="v in ticks" :key="v">

@@ -59,7 +59,7 @@ const yTicks = y.ticks(6)
     </g>
     <g v-if="picked" class="pick" @click="picked = null">
       <rect :x="Math.min(picked.cx + 8, W - 236)" :y="picked.cy - 44" width="228" height="40" rx="6" />
-      <text :x="Math.min(picked.cx + 8, W - 236) + 8" :y="picked.cy - 28">{{ picked.t.experiment }} {{ picked.t.test }} · {{ picked.t.oxygen_pct }}% oxygen</text>
+      <text :x="Math.min(picked.cx + 8, W - 236) + 8" :y="picked.cy - 28">{{ picked.t.experiment }} {{ picked.t.test }}, {{ picked.t.oxygen_pct }}% oxygen</text>
       <text :x="Math.min(picked.cx + 8, W - 236) + 8" :y="picked.cy - 12" class="sub">{{ picked.t.material }} (tap to close)</text>
     </g>
   </svg>
