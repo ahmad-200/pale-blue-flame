@@ -21,6 +21,14 @@ const dots = (s) => beeswarm(props.tests || [], s.x - 80, s.y - 6).map(n => ({ c
 
 <template>
   <svg viewBox="0 0 960 300" class="journey" role="img" aria-label="Earth, the Space Station, the Moon: where fires were tested">
+    <defs>
+      <radialGradient id="pale-blue-flame" cx="50%" cy="55%" r="55%">
+        <stop offset="0%" stop-color="#ffffff" stop-opacity=".95" />
+        <stop offset="35%" stop-color="#cfe6ff" stop-opacity=".9" />
+        <stop offset="70%" stop-color="#6fa8ff" stop-opacity=".55" />
+        <stop offset="100%" stop-color="#2f6bff" stop-opacity="0" />
+      </radialGradient>
+    </defs>
     <!-- Earth, a reference only -->
     <circle cx="60" cy="290" r="150" class="earth" />
     <path d="M 0 230 q 40 -30 80 -10 q 30 15 60 -5" class="land" />
@@ -44,7 +52,6 @@ const dots = (s) => beeswarm(props.tests || [], s.x - 80, s.y - 6).map(n => ({ c
         <text :x="s.x - 80" :y="s.y - 60" class="small" text-anchor="middle">↑ more O₂</text>
         <text :x="s.x - 80" :y="s.y + 56" class="small" text-anchor="middle">less</text>
       </g>
-      <circle :cx="s.x" :cy="s.y" r="34" class="halo" />
       <!-- the place itself -->
       <g v-if="s.icon === 'station'">
         <rect :x="s.x - 30" :y="s.y + 18" width="60" height="6" class="body" />
@@ -58,7 +65,9 @@ const dots = (s) => beeswarm(props.tests || [], s.x - 80, s.y - 6).map(n => ({ c
         <circle :cx="s.x - 13" :cy="s.y + 28" r="5" class="wheel" /><circle :cx="s.x + 13" :cy="s.y + 28" r="5" class="wheel" />
       </g>
       <!-- the fire: solid if tested, a dashed question if not -->
-      <path :d="flame(s.x, s.y - 4)" :class="s.st.tested ? 'flame' : 'flame unknown'" :style="{ transformOrigin: `${s.x}px ${s.y + 8}px` }" />
+      <circle v-if="s.st.tested" :cx="s.x" :cy="s.y - 6" r="22" class="flame" fill="url(#pale-blue-flame)"
+              :style="{ transformOrigin: `${s.x}px ${s.y - 6}px` }" />
+      <path v-else :d="flame(s.x, s.y - 4)" class="flame unknown" />
       <text v-if="!s.st.tested" :x="s.x" :y="s.y + 2" class="q" text-anchor="middle">?</text>
       <text :x="s.x" :y="s.y - 46" class="label" text-anchor="middle">{{ s.name.replace(/ \(.*\)/, '') }}</text>
       <text :x="s.x" :y="s.y + 52" class="small" :class="s.st.tested ? 'yes' : 'no'" text-anchor="middle">

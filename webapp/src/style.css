@@ -63,11 +63,11 @@ select { width: 100%; margin-top: 6px; padding: 8px; background: var(--bg); colo
 .journey .route { fill: none; stroke: #4a5677; stroke-width: 2; stroke-dasharray: 3 7; }
 .journey .label { fill: var(--text); font-size: 15px; font-weight: 600; } .journey .small { fill: var(--muted); font-size: 12px; }
 .journey .small.yes { fill: var(--green); } .journey .small.no { fill: var(--red); }
-.journey .stop { cursor: pointer; } .journey .halo { fill: transparent; stroke: transparent; stroke-width: 2; }
-.journey .stop.on .halo { stroke: var(--blue); fill: rgba(127, 178, 255, .08); }
-.journey .stop:hover .halo { stroke: var(--line); }
+.journey .stop { cursor: pointer; outline: none; } .journey .stop:focus { outline: none; }
+.journey .stop.on .label { fill: var(--blue); }   /* the chosen place: its name turns blue, no ring */
+.journey .stop:hover .label { text-decoration: underline; }
 .journey .body { fill: #c9cfdd; } .journey .panel-wing { fill: #5d7fb8; } .journey .wheel { fill: #8e98b3; }
-.journey .flame { fill: #ff9a3c; stroke: #ffd27a; stroke-width: 1.5; }
+.journey .flame { stroke: none; }
 .journey .flame.unknown { fill: none; stroke: var(--red); stroke-dasharray: 4 3; stroke-width: 2; }
 .journey .q { fill: var(--red); font-size: 18px; font-weight: 700; }
 .journey .fire-dot { fill: var(--green); opacity: .8; }
@@ -91,10 +91,10 @@ details.map { align-self: start; }
 .gapmap .pick .sub { fill: var(--muted); font-size: 11px; }
 
 /* motion on the journey strip */
-@keyframes flicker { 0%,100% { transform: scale(1, 1) } 25% { transform: scale(.94, 1.08) } 50% { transform: scale(1.05, .95) } 75% { transform: scale(.97, 1.05) } }
+@keyframes flicker { 0%,100% { transform: scale(1); opacity: .9 } 30% { transform: scale(1.08); opacity: 1 } 60% { transform: scale(.95); opacity: .8 } }
 @keyframes pulse { 0%,100% { opacity: .35 } 50% { opacity: 1 } }
 @keyframes fly-in { from { transform: translate(var(--dx), var(--dy)); opacity: 0 } to { transform: none; opacity: .85 } }
-.journey .flame:not(.unknown) { animation: flicker 1.1s ease-in-out infinite; }
+.journey .flame:not(.unknown) { animation: flicker 1.6s ease-in-out infinite; }
 .journey .flame.unknown, .journey .q { animation: pulse 2s ease-in-out infinite; }
 .journey .fire-dot { animation: fly-in .7s ease-out both; }
 @media (prefers-reduced-motion: reduce) { .journey * { animation: none !important; } }
