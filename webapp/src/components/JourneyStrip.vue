@@ -36,7 +36,8 @@ const dots = (s) => beeswarm(props.tests || [], s.x - 80, s.y - 6).map(n => ({ c
     <path d="M 150 150 Q 230 90 300 120 T 470 120 Q 600 110 700 175 T 860 205" class="route" />
 
     <g v-for="s in stops()" :key="s.id" class="stop" :class="{ on: s.id === placeId }" @click="emit('pick', s.id)">
-      <circle v-for="(d, i) in (s.st.tested ? dots(s) : [])" :key="d.t.experiment + d.t.test" :cx="d.cx" :cy="d.cy" r="3.2" class="fire-dot">
+      <circle v-for="(d, i) in (s.st.tested ? dots(s) : [])" :key="material + d.t.experiment + d.t.test" :cx="d.cx" :cy="d.cy" r="3.2"
+              class="fire-dot" :style="{ '--dx': `${s.x - d.cx}px`, '--dy': `${s.y - 6 - d.cy}px`, animationDelay: `${i * 25}ms` }">
         <title>{{ d.t.experiment }} {{ d.t.test }}: {{ d.t.oxygen_pct }}% oxygen</title>
       </circle>
       <g v-if="s.st.tested && tests && tests.length" class="small">
@@ -57,7 +58,7 @@ const dots = (s) => beeswarm(props.tests || [], s.x - 80, s.y - 6).map(n => ({ c
         <circle :cx="s.x - 13" :cy="s.y + 28" r="5" class="wheel" /><circle :cx="s.x + 13" :cy="s.y + 28" r="5" class="wheel" />
       </g>
       <!-- the fire: solid if tested, a dashed question if not -->
-      <path :d="flame(s.x, s.y - 4)" :class="s.st.tested ? 'flame' : 'flame unknown'" />
+      <path :d="flame(s.x, s.y - 4)" :class="s.st.tested ? 'flame' : 'flame unknown'" :style="{ transformOrigin: `${s.x}px ${s.y + 8}px` }" />
       <text v-if="!s.st.tested" :x="s.x" :y="s.y + 2" class="q" text-anchor="middle">?</text>
       <text :x="s.x" :y="s.y - 46" class="label" text-anchor="middle">{{ s.name.replace(/ \(.*\)/, '') }}</text>
       <text :x="s.x" :y="s.y + 52" class="small" :class="s.st.tested ? 'yes' : 'no'" text-anchor="middle">
