@@ -11,6 +11,7 @@ const SPOTS = {
   airlock: { x: 470, y: 120, icon: 'airlock' },
   moon: { x: 700, y: 175, icon: 'base' },
   rover: { x: 860, y: 205, icon: 'rover' },
+  mars: { x: 925, y: 95, icon: 'mars' },
 }
 // on a phone: only the Station (where NASA tested) and the chosen place, side by side
 const TWO = { iss: { x: 300, y: 140 }, other: { x: 700, y: 175 } }
@@ -83,6 +84,10 @@ const bridge = () => {
         <rect :x="s.x + 32" :y="s.y + 12" width="12" height="18" class="panel-wing" />
       </g>
       <rect v-else-if="s.icon === 'airlock'" :x="s.x - 14" :y="s.y + 14" width="28" height="14" rx="4" class="body" />
+      <g v-else-if="s.icon === 'mars'">
+        <circle :cx="s.x" :cy="s.y + 22" r="13" class="mars" />
+        <path :d="`M ${s.x - 9} ${s.y + 31} a 13 6 0 0 0 18 -2`" class="mars-shade" />
+      </g>
       <path v-else-if="s.icon === 'base'" :d="`M ${s.x - 30} ${s.y + 28} a 30 22 0 0 1 60 0 Z`" class="body" />
       <g v-else>
         <rect :x="s.x - 22" :y="s.y + 12" width="44" height="14" rx="5" class="body" />

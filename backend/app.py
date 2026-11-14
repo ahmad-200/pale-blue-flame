@@ -93,7 +93,7 @@ def interpret(s: State) -> State:
             '{"object": short name, "parts": [{"part": str, "kind": one of KINDS, "share": 0-100}], "place": key or null}\n'
             "parts: the 1-4 main parts of the object, with share = rough percent of its outside surface (what would "
             "burn first). Shares add up to about 100. kind must be one of: " + ", ".join(KINDS) + ". "
-            "If the visitor names one of the materials below directly, use the matching kind. Mars habitat -> moon; "
+            "If the visitor names one of the materials below directly, use the matching kind. Mars, a Mars habitat -> mars; "
             "any spacecraft cabin or 'in space' -> iss.\n"
             f"MATERIAL CARDS: {json.dumps(CARDS)}\nPLACES: {json.dumps({k: v['name'] for k, v in PLACES.items()})}",
             s["question"])

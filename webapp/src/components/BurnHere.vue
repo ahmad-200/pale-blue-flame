@@ -103,6 +103,44 @@ const noMatch = ref(false)   // the AI found no material we have: say so, never 
 // the place for the story's footer: which NASA experiments the dots come from
 const sources = computed(() => [...new Set(withOxygen.value.map(t => t.experiment))])
 const closestExp = computed(() => closest.value && experimentByName(closest.value.experiment))
+// --- rank NASA's investigations for the chosen place: our rule, explained in words (no AI)
+// what it studied (material flammability > detection, suppression > gas flames > models), whether it burned this
+// material, and how close its tested oxygen came to this place's air
+const ROLE = {
+  'BASS': ['prevent', 3, 'burned solid materials in moving air'], 'BASS-II': ['prevent', 3, 'burned solid materials in moving air'],
+  'SAFFIRE-I': ['prevent', 3, 'large fabric fire on a cargo ship'], 'SAFFIRE-II': ['prevent', 3, 'material fires on a cargo ship'],
+  'SAFFIRE-III': ['prevent', 3, 'large fabric fire on a cargo ship'], 'ACME BRE': ['prevent', 2.5, 'emulated burning materials in still air, including elevated oxygen'],
+  'SAME': ['detect', 2.5, 'measured smoke from heated materials'], 'SAME-R': ['detect', 2.5, 'measured smoke from heated materials'],
+  'DAFT / DAFT-2': ['detect', 2, 'tested a smoke-detector instrument on dust'],
+  'FLEX': ['suppress', 2.5, 'put out flames with CO2 and helium'], 'FLEX-2': ['suppress', 2.5, 'put out fuel-droplet flames'],
+}
+const ranked = computed(() => store.experiments.map(e => {
+  const role = ROLE[e.name] || (e.kind.startsWith('flight') ? [e.pillar, 1, 'studied gas or droplet flames'] : [e.pillar, 0.5, 'models or ground data'])
+  const rows = store.tests.filter(t => t.experiment === e.name)
+  const sameMaterial = rows.some(t => t.material === material.value)
+  const o2 = rows.filter(t => t.oxygen_pct != null).map(t => t.oxygen_pct)
+  const gap = o2.length ? Math.min(...o2.map(v => Math.abs(v - place.value.oxygen_pct))) : null
+  const why = [role[2]]
+  if (sameMaterial) why.push(`burned ${material.value}`)
+  if (gap != null) why.push(gap < 1 ? `tested at ${place.value.name}'s oxygen level` : `closest test ${gap.toFixed(1)} points of oxygen away`)
+  if (e.name === 'ACME BRE') why.push('its record reports burning in elevated oxygen without airflow')
+  const score = role[1] + (sameMaterial ? 1 : 0) + (gap != null ? Math.max(0, 1 - gap / 20) : 0) + (e.name === 'ACME BRE' && place.value.oxygen_pct > 25 ? 1 : 0)
+  return { e, pillar: role[0], score, why }
+}).sort((a, b) => b.score - a.score)
+  // a habitat needs all three: the best two that prevent, detect and suppress fires, best first
+  .filter((r, i, all) => all.filter(x => x.pillar === r.pillar).indexOf(r) < 2)
+  .slice(0, 6))
+
+// --- for modellers: the tests behind the current view, and a CSV of them
+const COLS = ['experiment', 'test', 'date', 'material', 'shape', 'size_mm', 'oxygen_pct', 'airflow_start_cm_s', 'airflow_min_cm_s', 'flow_direction', 'pressure_atm', 'pressure_assumed', 'result', 'material_text', 'source']
+function downloadCsv(rows, name) {
+  const cell = v => v == null ? '' : /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v)
+  const text = [COLS.join(','), ...rows.map(r => COLS.map(c => cell(r[c])).join(','))].join('\n')
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(new Blob([text], { type: 'text/csv' })); a.download = name; a.click()
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000)
+}
+
 const isNarrow = ref(false)
 const mq = typeof window !== 'undefined' ? window.matchMedia('(max-width: 700px)') : null
 if (mq) { isNarrow.value = mq.matches; mq.addEventListener('change', e => { isNarrow.value = e.matches }) }
@@ -246,6 +284,44 @@ onBeforeUnmount(() => { clearInterval(tick); clearTimeout(idle) })
         {{ closest.material_text }}. Compared with {{ place.name }}: {{ closest.gap }}.</p>
       <p><a v-if="closestExp" :href="`#/experiment/${closestExp.id}`" class="cta">Explore this experiment</a>
         <span class="muted small"> Its papers, the full oxygen and pressure chart, and every test are on the experiment page.</span></p>
+    </section>
+
+    <!-- ranked investigations for this place (our rule, with its reasons) -->
+    <section v-if="!stand" class="ranked">
+      <h2>Most relevant NASA investigations for {{ place.name }}</h2>
+      <p class="muted small">The best two for preventing, detecting and putting out fires. Ranked by what each studied,
+        whether it burned {{ material }}, and how close its tests came to {{ place.name }}'s air. Our rule, not NASA's.</p>
+      <ol>
+        <li v-for="r in ranked" :key="r.e.id">
+          <a :href="`#/experiment/${r.e.id}`"><b>{{ r.e.name || r.e.id }}</b></a>
+          <span class="pill" :class="r.pillar">{{ r.pillar }}</span>
+          <span class="muted"> {{ r.e.title }}</span><br />
+          <small>{{ r.why.join('; ') }}.</small>
+        </li>
+      </ol>
+    </section>
+
+    <!-- the data behind the view, for modellers -->
+    <section v-if="!stand" class="modellers">
+      <h2>For modellers: the {{ mine.length }} {{ material }} tests</h2>
+      <p class="muted small">One row per test from NASA's tables, cleaned into the same columns. Pressure is assumed 1 atm where NASA's
+        table does not record it (marked in the data).
+        <button class="link" @click="downloadCsv(mine, `nasa-${material.replace(/[^a-z0-9]+/gi, '-').replace(/-$/, '').toLowerCase()}-tests.csv`)">Download these as CSV</button>
+        or <a href="./data/material_tests.csv" download>all 263 material tests</a>.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Experiment</th><th>Test</th><th>Shape</th><th>Size (mm)</th><th>Oxygen %</th><th>Airflow cm/s</th><th>Flow</th><th>Result in table</th></tr></thead>
+          <tbody>
+            <tr v-for="t in mine.slice(0, 40)" :key="t.experiment + t.test">
+              <td><a :href="link(t.experiment)">{{ t.experiment }}</a></td><td>{{ t.test }}</td><td>{{ t.shape || '–' }}</td>
+              <td>{{ t.size_mm ?? '–' }}</td><td>{{ t.oxygen_pct ?? '–' }}</td>
+              <td>{{ t.airflow_start_cm_s ?? '–' }}<template v-if="t.airflow_min_cm_s != null && t.airflow_min_cm_s !== t.airflow_start_cm_s"> → {{ t.airflow_min_cm_s }}</template></td>
+              <td>{{ t.flow_direction || '–' }}</td><td>{{ t.result || '–' }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <p v-if="mine.length > 40" class="muted small">Showing 40 of {{ mine.length }}; the CSV has them all.</p>
+      </div>
     </section>
 
     <!-- after a question: background from the AI, kept apart from NASA's data -->

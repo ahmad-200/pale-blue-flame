@@ -10,6 +10,32 @@ const tests = computed(() => e.value ? store.tests.filter(t => t.experiment === 
 const materials = computed(() => [...new Set(tests.value.map(t => t.material))].join(', '))
 const firstMaterial = computed(() => tests.value.find(t => t.oxygen_pct != null)?.material)
 const station = computed(() => store.places.find(p => p.id === 'iss'))
+const sum = computed(() => store.summaries?.[props.id])
+const SRC = { objective: 'NASA record: goal', approach: 'NASA record: method', hypothesis: 'NASA record: hypothesis',
+  earth_benefits: 'NASA record: impacts', our_table: 'our test table' }
+const srcLabel = s => SRC[s] || (s.startsWith('paper:') ? 'paper title' : s)
+
+// how the tests differed and what stayed the same, worked out from our table (no AI)
+const range = (vals, unit) => { const v = vals.filter(x => x != null); if (!v.length) return null
+  const lo = Math.min(...v), hi = Math.max(...v); return lo === hi ? `${lo} ${unit}` : `${lo}–${hi} ${unit}` }
+const differ = computed(() => {
+  const t = tests.value; if (!t.length) return null
+  const uniq = k => [...new Set(t.map(x => x[k]).filter(Boolean))]
+  return [
+    ['Materials', uniq('material').join(', ')],
+    ['Shapes', uniq('shape').join(', ') || 'not recorded'],
+    ['Thickness or diameter', range(t.map(x => x.size_mm), 'mm') || 'not recorded'],
+    ['Oxygen', range(t.map(x => x.oxygen_pct), '%') || 'not recorded'],
+    ['Airflow at the start', range(t.map(x => x.airflow_start_cm_s), 'cm/s') || 'not recorded'],
+    ['Flow direction', uniq('flow_direction').join(', ') || 'not recorded'],
+    ['Pressure', 'about 1 atm in every test (cabin air; assumed where not recorded)'],
+  ]
+})
+
+// compare with another investigation
+const others = computed(() => store.experiments.filter(x => x.id !== props.id))
+function compareWith(ev) { if (ev.target.value) location.hash = `#/compare/${props.id}/${ev.target.value}` }
+
 const sections = [['objective', 'What they wanted to know'], ['approach', 'How they did it'], ['hypothesis', 'What they expected'], ['earth_benefits', 'Why it matters down here']]
 </script>
 
@@ -29,10 +55,45 @@ const sections = [['objective', 'What they wanted to know'], ['approach', 'How t
     <img :src="e.image" :alt="e.title" class="photo" @error="$event.target.style.display = 'none'" />
 
     <section class="found">
-      <h2>What they found</h2>
-      <p class="muted">We haven't written this part yet. Truth is, the results live mostly in the papers below, not in
-        NASA's tables, and we want to read them before we sum them up.</p>
-      <p v-if="tests.length">What we do have: <b>{{ tests.length }}</b> fires from this experiment in our table ({{ materials }}).</p>
+      <h2>In short</h2>
+      <template v-if="sum">
+        <ul class="sourced">
+          <li v-for="(l, i) in sum.summary" :key="i">{{ l.text }} <span class="src">{{ srcLabel(l.source) }}</span></li>
+        </ul>
+        <h3>What they found</h3>
+        <ul v-if="sum.findings.length" class="sourced findings">
+          <li v-for="(l, i) in sum.findings" :key="i">{{ l.text }} <span class="src">{{ srcLabel(l.source) }}</span></li>
+        </ul>
+        <p v-else class="muted">NASA's record for this investigation does not state its results; they are in the papers below.</p>
+        <p v-if="sum.safety"><b>For fire safety:</b> {{ sum.safety }}</p>
+        <p v-if="sum.earth"><b>Back on Earth:</b> {{ sum.earth }}</p>
+        <p class="muted small">Drafted by AI only from NASA's record for this investigation; each line names the part of the record it
+          comes from, and lines without a real source were removed.</p>
+      </template>
+      <p v-else class="muted">No summary yet.</p>
+    </section>
+
+    <section v-if="differ">
+      <h2>How the {{ tests.length }} tests differed</h2>
+      <dl class="differ">
+        <div v-for="[k, v] in differ" :key="k"><dt>{{ k }}</dt><dd>{{ v }}</dd></div>
+      </dl>
+      <p class="muted small">From our cleaned copy of NASA's test table. Results are recorded for only some tests.</p>
+    </section>
+
+    <section v-if="e.table_columns?.length || e.hardware">
+      <h2>What was measured</h2>
+      <p v-if="e.hardware"><b>Hardware:</b> {{ e.hardware }}</p>
+      <p v-if="e.table_columns?.length"><b>Recorded for each test in NASA's table:</b> {{ e.table_columns.join(', ') }}.</p>
+      <p v-else class="muted">NASA's record has no test table for this investigation.</p>
+    </section>
+
+    <section>
+      <h2>Compare with another investigation</h2>
+      <select class="compare-pick" @change="compareWith">
+        <option value="">Choose one…</option>
+        <option v-for="o in others" :key="o.id" :value="o.id">{{ o.name || o.id }}: {{ o.title }}</option>
+      </select>
     </section>
 
     <section v-if="e.id === 'PSI-98' && store.saffire">

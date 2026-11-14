@@ -5,14 +5,15 @@ import HomeView from './components/HomeView.vue'
 import BurnHere from './components/BurnHere.vue'
 import ExperimentCard from './components/ExperimentCard.vue'
 import CosmicBackdrop from './components/CosmicBackdrop.vue'
+import ComparePage from './components/ComparePage.vue'
 
 // Tiny hash router: #/ , #/burn , #/experiment/PSI-25
 const stand = new URLSearchParams(location.search).has('stand')
 if (stand) document.documentElement.classList.add('stand-mode')
 const route = ref(parse())
 function parse() {
-  const [, page = '', id = ''] = (location.hash || '#/').slice(1).split('/')
-  return { page, id }
+  const [, page = '', id = '', id2 = ''] = (location.hash || '#/').slice(1).split('/')
+  return { page, id, id2 }
 }
 window.addEventListener('hashchange', () => { route.value = parse(); window.scrollTo(0, 0) })
 onMounted(loadData)
@@ -32,7 +33,8 @@ onMounted(loadData)
     <p v-else-if="!store.ready" class="muted">Gathering NASA's fires...</p>
     <template v-else>
       <BurnHere v-if="route.page === 'burn' || stand" :stand="stand" />
-      <ExperimentCard v-else-if="route.page === 'experiment'" :id="route.id" />
+      <ExperimentCard v-else-if="route.page === 'experiment'" :id="route.id" :key="route.id" />
+      <ComparePage v-else-if="route.page === 'compare'" :a="route.id" :b="route.id2" />
       <HomeView v-else />
     </template>
   </main>

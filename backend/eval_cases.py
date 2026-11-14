@@ -11,7 +11,7 @@ CASES = [  # question, expected first material (None = nothing comparable), expe
     ("would my cotton shirt burn on the moon", "SIBAL (cotton-fiberglass)", "moon"),
     ("would a towel burn on the space station", "SIBAL (cotton-fiberglass)", "iss"),
     ("would a firefighter suit burn in the airlock", "Nomex", "airlock"),
-    ("would a candle burn on a mars base", "candle wax", "moon"),
+    ("would a candle burn on a mars base", "candle wax", "mars"),
     ("would a rubber seal burn in the rover", "silicone", "rover"),
     ("would a usb cable burn on the moon", "silicone", "moon"),
     ("would plexiglass burn on the ISS", "PMMA (acrylic)", "iss"),

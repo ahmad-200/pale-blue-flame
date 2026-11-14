@@ -336,3 +336,29 @@ main { padding-bottom: 96px; }
 .airlines .callout path { stroke: var(--alert) !important; stroke-width: 3; animation: blink 1s steps(1, end) infinite; }
 .airlines .callout text { fill: var(--alert) !important; }
 @keyframes blink { 0%, 60% { opacity: 1 } 61%, 100% { opacity: 0.15 } }
+.journey .mars { fill: #B5654A; } .journey .mars-shade { fill: #8E4C38; }
+
+/* ranked investigations and the modellers' table (below the first screen) */
+.ranked, .modellers { margin: 40px 0; }
+.ranked ol { padding-left: 22px; } .ranked li { margin-bottom: 12px; line-height: 1.5; }
+.ranked .pill { margin-left: 8px; }
+button.link { background: none; border: 0; padding: 0; color: var(--flame); font: inherit; text-decoration: underline; cursor: pointer; }
+.table-wrap { overflow-x: auto; max-width: 100%; }
+.modellers table { border-collapse: collapse; font-size: 14px; min-width: 720px; }
+.modellers th, .modellers td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+.modellers th { color: var(--regolith); font-weight: 600; }
+
+/* experiment page: sourced summary, how tests differed, compare */
+.sourced { padding-left: 20px; } .sourced li { margin-bottom: 8px; line-height: 1.55; }
+.sourced .src { font-size: 12px; color: var(--regolith); border: 1px solid var(--rule); border-radius: 999px; padding: 0 8px; margin-left: 6px; white-space: nowrap; }
+.findings li { color: var(--hull); }
+.found h3 { font-size: 16px; margin: 18px 0 6px; }
+.differ { display: grid; grid-template-columns: max-content 1fr; gap: 6px 20px; margin: 0; }
+.differ div { display: contents; } .differ dt { color: var(--regolith); } .differ dd { margin: 0; }
+.compare-pick { width: 100%; max-width: 640px; }
+.compare table { border-collapse: collapse; width: 100%; font-size: 15px; }
+.compare th, .compare td { text-align: left; vertical-align: top; padding: 8px 12px; border-bottom: 1px solid var(--rule); }
+.compare tbody th { color: var(--regolith); font-weight: 600; width: 22%; }
+
+.earth-section { margin: 48px 0; } .earth-section h3 { font-size: 17px; margin: 24px 0 8px; }
+.spinoffs { padding-left: 20px; } .spinoffs li { margin-bottom: 10px; line-height: 1.55; }

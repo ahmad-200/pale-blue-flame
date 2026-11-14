@@ -11,6 +11,11 @@ const PILLARS = [
 const pillar = ref(null)
 const count = id => store.experiments.filter(e => e.pillar === id).length
 const shown = computed(() => store.experiments.filter(e => !pillar.value || e.pillar === pillar.value))
+// investigations whose own record (summarized) says what they mean back on Earth
+const earthNotes = computed(() => store.experiments
+  .map(e => ({ e, text: store.summaries?.[e.id]?.earth }))
+  .filter(x => x.text && ['prevent', 'detect', 'suppress'].includes(x.e.pillar) && x.e.kind.startsWith('flight'))
+  .slice(0, 4))
 const totalTests = computed(() => store.experiments.reduce((s, e) => s + e.test_table_rows, 0))
 </script>
 
@@ -42,6 +47,28 @@ const totalTests = computed(() => store.experiments.reduce((s, e) => s + e.test_
     <FireReplay :data="store.saffire" auto />
     <p class="muted small">Saffire-I, NASA. Raw sensor values, about one reading every 30 seconds.
       <a href="#/experiment/PSI-98">About this experiment</a></p>
+  </section>
+
+  <section class="earth-section">
+    <h2>Back on Earth</h2>
+    <p class="lede">Fire safety in space has a habit of coming home.</p>
+    <ul class="spinoffs">
+      <li><b>Water-mist fire extinguishers.</b> Fine-water-mist extinguishers developed for the Space Station have uses on Earth too.
+        <span class="muted small">(named in the Space Apps challenge)</span></li>
+      <li><b>Smoke detectors.</b> A 1970s detector built for the shuttle could tell smoke from dust.
+        <a href="https://spinoff.nasa.gov/node/9407" target="_blank">NASA Spinoff</a></li>
+      <li><b>Firefighters' air tanks.</b> Spacesuit technology made firefighters' breathing gear lighter.
+        <a href="https://spinoff.nasa.gov/node/9582" target="_blank">NASA Spinoff</a></li>
+      <li><b>Protective clothing.</b> Spacesuit materials found their way into firefighters' gear.
+        <a href="https://spinoff.nasa.gov/node/9918" target="_blank">NASA Spinoff</a></li>
+    </ul>
+    <template v-if="earthNotes.length">
+      <h3>What the experiments themselves say</h3>
+      <ul class="sourced">
+        <li v-for="n in earthNotes" :key="n.e.id"><a :href="`#/experiment/${n.e.id}`">{{ n.e.name }}</a>: {{ n.text }}</li>
+      </ul>
+      <p class="muted small">Drafted by AI from each investigation's NASA record.</p>
+    </template>
   </section>
 
   <section>

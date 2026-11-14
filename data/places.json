@@ -38,6 +38,15 @@
    "pressure_atm": 0.56,
    "note": "Proposed: NASA rover studies plan the same kind of air as the habitat. Actual vehicles may differ.",
    "source": "https://ntrs.nasa.gov/api/citations/20070021378/downloads/20070021378.pdf"
+  },
+  {
+   "id": "mars",
+   "name": "Mars base",
+   "oxygen_pct": 34,
+   "pressure_psia": 8.2,
+   "pressure_atm": 0.56,
+   "note": "Proposed: NASA exploration-atmosphere studies plan the same kind of air for Mars surface habitats as for Moon bases (8.0 psia and 32% oxygen in 2006, revised to 8.2 psia and 34% in 2012). Actual missions may differ.",
+   "source": "https://ntrs.nasa.gov/api/citations/20070021378/downloads/20070021378.pdf"
   }
  ],
  "warning": {
