@@ -1,10 +1,10 @@
 /* Pale Blue Flame: one accent (the flame), one family (Archivo, width axis for headlines). */
 :root {
-  --orbit: #0F1B2D;        /* page */
-  --orbit-2: #15243A;      /* raised surfaces */
-  --rule: #26364F;         /* hairlines */
+  --orbit: #05070B;        /* page: near black */
+  --orbit-2: #0D1320;      /* raised surfaces */
+  --rule: #1E2A3F;         /* hairlines */
   --hull: #E8EDF4;         /* text */
-  --regolith: #8C95A8;     /* quiet text */
+  --regolith: #97A1B5;     /* quiet text (a touch lighter on black, to stay easy to read) */
   --flame: #9FD3FF;        /* the accent: tested, links, focus */
   --flame-deep: #5E9BE0;
   --ember: #F2A65A;        /* never tested, warnings */
@@ -111,7 +111,7 @@ details.map[open] summary { margin-bottom: 12px; }
 /* journey strip */
 .journey { width: 100%; height: auto; display: block; }
 .journey .earth { fill: #1E4A80; } .journey .land { stroke: #3D7A5C; stroke-width: 10; fill: none; stroke-linecap: round; }
-.journey .moon { fill: #343B4A; } .journey .crater { fill: #2A303D; }
+.journey .moon { fill: #262C38; } .journey .crater { fill: #1D222C; }
 .journey .route { fill: none; stroke: var(--rule); stroke-width: 2; stroke-dasharray: 3 7; }
 .journey .label { fill: var(--hull); font-size: 15px; font-weight: 600; transition: fill .15s; }
 .journey .small { fill: var(--regolith); font-size: 12px; }
@@ -180,3 +180,55 @@ details.map[open] summary { margin-bottom: 12px; }
 .tour-bar span { display: block; height: 100%; background: var(--flame); transform-origin: left; animation: tour-fill linear forwards; }
 .tour.paused .tour-bar span { animation: none; transform: scaleX(0); }
 @keyframes tour-fill { from { transform: scaleX(0) } to { transform: scaleX(1) } }
+
+/* the answer and the closest tests side by side, so the carousel shows both */
+.answer-row { display: grid; grid-template-columns: 1.5fr 1fr; gap: 40px; align-items: start; margin-top: 8px; }
+@media (max-width: 860px) { .answer-row { grid-template-columns: 1fr; gap: 16px; } }
+.answer-row .answer { margin: 0; }
+.closest { padding-top: 20px; }
+.closest h2 { font-size: 18px; margin: 0 0 8px; }
+.closest .nearest li { margin-bottom: 10px; }
+.facts { grid-template-columns: 1fr; }
+/* the line from the nearest real fire to the untested place */
+.journey .bridge path { fill: none; stroke: var(--ember); stroke-width: 2; stroke-dasharray: .02 .015;
+  animation: draw-bridge .8s ease-out both; }
+.journey .bridge circle { fill: none; stroke: var(--ember); stroke-width: 2; }
+.journey .bridge text { fill: var(--ember); font-size: 12px; font-weight: 600; }
+@keyframes draw-bridge { from { stroke-dashoffset: 1; opacity: 0 } to { stroke-dashoffset: 0; opacity: 1 } }
+.nowrap { white-space: nowrap; }
+
+.material-line { display: flex; align-items: center; gap: 16px; margin: 4px 0 14px; }
+.material-line p { margin: 0; max-width: 60ch; }
+.material-icon { width: 64px; height: 64px; flex: none; }
+
+/* Background: a nod to Voyager 1's Pale Blue Dot (1990). Faint sunbeams across deep space,
+   a sparse starfield, and one tiny pale blue dot inside a beam. Fixed behind everything, quiet enough to read over. */
+body { background: transparent; }   /* the page colour lives on :root, so the layers below can show */
+body::before {
+  content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none;
+  background:
+    /* the sunbeams: soft diagonal bands, warm like scattered sunlight in the photo */
+    linear-gradient(112deg, transparent 0 30%, rgba(140, 190, 255, .03) 33%, rgba(160, 205, 255, .055) 35.5%, rgba(140, 190, 255, .03) 38%, transparent 41%),
+    linear-gradient(112deg, transparent 0 52%, rgba(120, 170, 255, .022) 55%, rgba(140, 190, 255, .04) 57%, rgba(120, 170, 255, .022) 59%, transparent 62%),
+    linear-gradient(112deg, transparent 0 68%, rgba(159, 211, 255, .02) 70%, rgba(159, 211, 255, .035) 71.5%, rgba(159, 211, 255, .02) 73%, transparent 75%),
+    /* a sparse starfield: three offset layers of tiny points */
+    radial-gradient(1px 1px at 12% 18%, rgba(232, 237, 244, .55), transparent 60%),
+    radial-gradient(1px 1px at 78% 9%, rgba(232, 237, 244, .45), transparent 60%),
+    radial-gradient(1.2px 1.2px at 44% 72%, rgba(232, 237, 244, .5), transparent 60%),
+    radial-gradient(1px 1px at 91% 64%, rgba(232, 237, 244, .35), transparent 60%),
+    radial-gradient(1px 1px at 27% 88%, rgba(232, 237, 244, .4), transparent 60%),
+    radial-gradient(1px 1px at 63% 33%, rgba(232, 237, 244, .3), transparent 60%),
+    radial-gradient(60% 45% at 18% -5%, rgba(60, 120, 255, .16), transparent 70%),
+    radial-gradient(45% 40% at 88% 22%, rgba(159, 211, 255, .08), transparent 70%),
+    radial-gradient(70% 45% at 50% 108%, rgba(40, 95, 210, .13), transparent 70%),
+    var(--orbit);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 320px 320px, 410px 410px, 530px 530px, 290px 290px, 470px 470px, 380px 380px, 100% 100%, 100% 100%, 100% 100%;
+}
+/* the pale blue dot itself, in the middle beam */
+body::after {
+  content: ""; position: fixed; z-index: -1; pointer-events: none;
+  left: 82.5%; top: 15%; width: 4px; height: 4px; border-radius: 50%;   /* in the right-hand beam, clear of the content column */
+  background: #BFE3FF; box-shadow: 0 0 6px 1px rgba(159, 211, 255, .55);
+}
+.top, footer { background: transparent; }
+.pbd-note { display: block; margin-top: 6px; }

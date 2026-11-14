@@ -3,6 +3,7 @@ import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { store, experimentByName } from '../data.js'
 import GapMap from './GapMap.vue'
 import JourneyStrip from './JourneyStrip.vue'
+import MaterialIcon from './MaterialIcon.vue'
 
 const placeId = ref('moon')
 const material = ref('SIBAL (cotton-fiberglass)')
@@ -31,14 +32,33 @@ const statusOf = p => {
 const inside = computed(() => statusOf(place.value).tested)
 
 // nearest = smallest gap in oxygen (10 points) and pressure (0.5 atm) weighted alike; shown as plain differences
-const fmt = (v, unit, digits) => `${v > 0 ? '+' : v < 0 ? '−' : '±'}${Math.abs(v).toFixed(digits)} ${unit}`
+// plain words for the difference: "the same air as here", or what this place has more or less of
+const gapWords = (dO, dP) => {
+  const parts = []
+  if (Math.abs(dO) >= 0.5) parts.push(`${Math.abs(dO).toFixed(1)} points ${dO > 0 ? 'more' : 'less'} oxygen here`)
+  if (Math.abs(dP) >= 0.05) parts.push(dP < 0 ? `air ${Math.abs(dP).toFixed(2)} atm thinner here` : `air ${dP.toFixed(2)} atm denser here`)
+  return parts.length ? parts.join(', ') : 'the same air as here'
+}
 const nearest = computed(() => withOxygen.value.map(t => {
   const dO = place.value.oxygen_pct - t.oxygen_pct, dP = place.value.pressure_atm - t.pressure_atm
   return { ...t, dist: Math.abs(dO) / 10 + Math.abs(dP) / 0.5,
-           gap: `this place: ${fmt(dO, 'pts oxygen', 1)}, ${fmt(dP, 'atm', 2)}` }
+           gap: gapWords(dO, dP) }
 }).sort((a, b) => a.dist - b.dist).slice(0, 5))
 const closest = computed(() => nearest.value[0])
 const link = name => `#/experiment/${experimentByName(name)?.id}`
+
+// what each material is, in everyday words (SIBAL from NASA's Saffire-I record)
+const WHAT = {
+  'SIBAL (cotton-fiberglass)': 'A fabric of cotton on a fiberglass backing. It burns like cotton but keeps its shape.',
+  'PMMA (acrylic)': 'Clear, hard plastic: the stuff of Plexiglas windows. NASA burned it as sheets, rods and spheres.',
+  'PMMA (assumed)': 'Probably acrylic: NASA’s table only says “sphere”.',
+  'PMMA + Nomex': 'Acrylic and Nomex fabric in one sample.',
+  'Nomex': 'A flame-resistant fabric, the kind used in firefighter suits.',
+  'silicone': 'A soft, rubbery material, used in seals and cable coverings.',
+  'candle wax': 'Ordinary candle wax.',
+  'Ultem': 'A tough, amber-coloured plastic.',
+}
+const what = computed(() => WHAT[material.value] || 'NASA’s table does not say what this sample was.')
 
 // --- carousel: nobody at a stand clicks, so the page walks through examples by itself.
 // Each tested case at the Station is followed by the same material somewhere nobody has tried.
@@ -76,12 +96,19 @@ onBeforeUnmount(() => { clearInterval(tick); clearTimeout(idle) })
       </select>
     </label>
     burn in
-    <label class="inline-select"><span class="sr">Place</span>
+    <span class="nowrap"><label class="inline-select"><span class="sr">Place</span>
       <select v-model="placeId">
         <option v-for="p in store.places" :key="p.id" :value="p.id">{{ p.name }}</option>
       </select>
-    </label>?
+    </label>?</span>
   </h1>
+  <Transition name="swap" mode="out-in">
+    <div class="material-line" :key="material">
+      <MaterialIcon :material="material" />
+      <p><b>{{ material }}</b><br />{{ what }} <span class="muted small">(illustration)</span></p>
+    </div>
+  </Transition>
+
   <div class="tour" :class="{ paused: !auto }">
     <button class="tour-toggle" @click="toggle" :aria-label="auto ? 'Pause the tour' : 'Play the tour'">{{ auto ? 'Pause' : 'Play' }}</button>
     <div class="tour-dots" role="tablist" aria-label="Examples">
@@ -94,11 +121,12 @@ onBeforeUnmount(() => { clearInterval(tick); clearTimeout(idle) })
     We will show you every fire NASA has lit with it, and whether any of them happened in that kind of air.</p>
 
   <section class="journey-section">
-    <JourneyStrip :places="store.places" :place-id="placeId" :status="statusOf" :material="material" :tests="withOxygen" @pick="id => placeId = id" />
+    <JourneyStrip :places="store.places" :place-id="placeId" :status="statusOf" :material="material" :tests="withOxygen" :closest="inside ? null : closest" @pick="id => placeId = id" />
     <p class="muted small">Every blue dot is a real fire NASA lit with {{ material }}; higher dots had more oxygen. A dashed flame means nobody has lit it there yet.
       Tap a place to choose it.</p>
   </section>
 
+  <div class="answer-row">
   <section class="answer" :class="inside ? 'ok' : 'gap'" aria-live="polite">
     <Transition name="swap" mode="out-in">
       <div :key="placeId + material">
@@ -125,28 +153,30 @@ onBeforeUnmount(() => { clearInterval(tick); clearTimeout(idle) })
     </Transition>
   </section>
 
+  <section class="closest" aria-live="polite">
+    <h2>The closest NASA got</h2>
+    <Transition name="swap" mode="out-in">
+      <ol class="nearest" :key="placeId + material">
+        <li v-for="t in nearest.slice(0, 3)" :key="t.experiment + t.test">
+          <a :href="link(t.experiment)">{{ t.experiment }} {{ t.test }}</a>
+          <span class="gap-text">{{ t.gap }}</span>
+          <small class="muted">{{ t.oxygen_pct }}% oxygen<template v-if="t.airflow_start_cm_s != null">, {{ t.airflow_start_cm_s }} cm/s airflow</template></small>
+        </li>
+        <li v-if="!nearest.length" class="muted">None yet: no fire with this material has its oxygen written down.</li>
+      </ol>
+    </Transition>
+    <p class="muted small">Distances, not danger scores.</p>
+  </section>
+  </div>
+
   <div class="facts">
     <section>
       <h2>The air there</h2>
       <p class="air">{{ place.oxygen_pct }}% oxygen, {{ place.pressure_psia }} psi ({{ place.pressure_atm }} atm)</p>
       <p class="muted">{{ place.note }} <a :href="place.source" target="_blank">Source</a></p>
-      <p class="muted small">PMMA is acrylic, the clear plastic in Plexiglas. SIBAL is a cotton and fiberglass fabric.
-        Nomex is the flame-resistant fabric in firefighter suits.</p>
     </section>
 
-    <section>
-      <h2>The closest NASA got</h2>
-      <p class="muted small">The fires whose air was most like this place, and how far off they were. These are distances, not danger scores.</p>
-      <ol class="nearest">
-        <li v-for="t in nearest" :key="t.experiment + t.test">
-          <a :href="link(t.experiment)">{{ t.experiment }} {{ t.test }}</a>
-          <span class="gap-text">{{ t.gap }}</span>
-          <small class="muted">{{ t.oxygen_pct }}% oxygen<template v-if="t.airflow_start_cm_s != null">, {{ t.airflow_start_cm_s }} cm/s airflow</template>,
-            {{ t.material_text }}<template v-if="t.result">. {{ t.result }}</template></small>
-        </li>
-        <li v-if="!nearest.length" class="muted">None yet: no fire with this material has its oxygen written down.</li>
-      </ol>
-    </section>
+
   </div>
 
   <details class="map">

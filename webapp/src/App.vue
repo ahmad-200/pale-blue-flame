@@ -34,5 +34,7 @@ onMounted(loadData)
   </main>
   <footer class="muted">
     Data: NASA Physical Sciences Informatics, Combustion Science ({{ store.meta.fetched }}). NASA Space Apps 2026, Flame in Freefall.
+    <span class="pbd-note">The background nods to Voyager 1’s Pale Blue Dot (1990): Earth as one small speck in a beam of sunlight.
+      Every fire on this site was lit to keep people safe a long way from it.</span>
   </footer>
 </template>
