@@ -11,7 +11,7 @@ const SPOTS = {
   airlock: { x: 470, y: 120, icon: 'airlock' },
   moon: { x: 700, y: 175, icon: 'base' },
   rover: { x: 860, y: 205, icon: 'rover' },
-  mars: { x: 925, y: 95, icon: 'mars' },
+  mars: { x: 895, y: 95, icon: 'mars' },
 }
 // on a phone: only the Station (where NASA tested) and the chosen place, side by side
 const TWO = { iss: { x: 300, y: 140 }, other: { x: 700, y: 175 } }

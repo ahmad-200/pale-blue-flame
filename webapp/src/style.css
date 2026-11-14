@@ -287,6 +287,27 @@ details.map[open] summary { margin-bottom: 12px; }
   border-radius: 999px; padding: 11px 18px; }
 .ask-bar input:focus-visible { outline: none; border-color: var(--flame); }
 .ask-bar .ask-note { white-space: nowrap; }
+.ask-bar { flex-wrap: wrap; }
+.ask-bar .prompts { flex-basis: 100%; display: flex; gap: 6px; align-items: center; overflow-x: auto; scrollbar-width: none; }
+.ask-bar .prompt { flex: none; font: inherit; font-size: 13px; color: var(--hull); background: transparent; cursor: pointer;
+  border: 1px solid var(--rule); border-radius: 999px; padding: 4px 10px; }
+.ask-bar .prompt:hover:not(:disabled) { border-color: var(--flame); color: var(--flame); }
+.ask-bar .prompt:focus-visible { outline: 2px solid var(--flame); outline-offset: 2px; }
+.ask-bar .prompt:disabled { cursor: default; opacity: .5; }
+.ask-bar .prompt.on { opacity: 1; border-color: var(--flame); color: var(--flame); }
+.ask-btn { display: inline-flex; align-items: center; gap: 8px; }
+/* the spinner: a ring that turns while the question is read */
+.spinner { width: 1em; height: 1em; flex: none; border-radius: 50%; border: 2px solid rgba(159, 211, 255, .25);
+  border-top-color: var(--flame); animation: spin .8s linear infinite; display: inline-block; }
+.spinner.dark { border-color: rgba(5, 7, 11, .25); border-top-color: var(--orbit); }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2.4s; } }
+.burn .thinking-line { display: flex; gap: 12px; align-items: center; font-size: 18px; color: var(--hull); margin: 0 0 8px;
+  padding: 10px 16px; border: 1px solid var(--rule); border-radius: 12px; background: rgba(159, 211, 255, .06); }
+.burn .thinking-line .spinner { width: 22px; height: 22px; border-width: 3px; }
+/* while asking, the old slide fades back so the new answer is clearly new */
+.burn.thinking .journey-wrap, .burn.thinking .evidence, .burn.thinking .verdict-block { opacity: .3; transition: opacity .3s; }
+main { padding-bottom: 140px; }
 @media (max-width: 760px) { .ask-bar .ask-note { display: none; } }
 main { padding-bottom: 96px; }
 

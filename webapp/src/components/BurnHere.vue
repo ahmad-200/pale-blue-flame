@@ -98,6 +98,12 @@ onMounted(() => { show(0); start() })
 // The answer itself still comes from NASA's data. The key lives on the server (/api/ask), never here.
 const ASK_URL = import.meta.env.VITE_ASK_URL || '/api/ask'
 const question = ref(''), asking = ref(false), reading = ref(null)
+// example questions: one click asks it, so a visitor sees a real answer arrive
+const PROMPTS = ['Would my running shoe burn in a Moon rover?', 'Would my cotton shirt burn on the Station?',
+  'Would a candle burn on Mars?', 'Would a metal spoon burn on the Moon?']
+function askThis(q) { if (asking.value) return; question.value = q; ask() }
+// seconds since the question was sent, shown beside the spinner
+const waited = ref(0); let waitTimer = null
 const noMatch = ref(false)   // the AI found no material we have: say so, never show a leftover one
 
 // the place for the story's footer: which NASA experiments the dots come from
@@ -148,6 +154,7 @@ if (mq) { isNarrow.value = mq.matches; mq.addEventListener('change', e => { isNa
 async function ask() {
   if (!question.value.trim() || asking.value) return
   asking.value = true; reading.value = null; touched()
+  waited.value = 0; clearInterval(waitTimer); waitTimer = setInterval(() => waited.value++, 1000)
   try {
     const r = await fetch(ASK_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({ question: question.value }) })
@@ -161,22 +168,26 @@ async function ask() {
   } catch {
     reading.value = { error: 'Custom questions need an internet connection. The NASA experiment tour still works offline.' }
   } finally {
-    asking.value = false; stop(); clearTimeout(idle)
+    asking.value = false; clearInterval(waitTimer); stop(); clearTimeout(idle)
     if (reading.value && !reading.value.error) {
       asked.value = true
       await nextTick(); window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }
 }
-onBeforeUnmount(() => { clearInterval(tick); clearTimeout(idle) })
+onBeforeUnmount(() => { clearInterval(tick); clearTimeout(idle); clearInterval(waitTimer) })
 </script>
 
 <template>
-  <div class="burn" :class="{ stand, answering: asked }">
+  <div class="burn" :class="{ stand, answering: asked, thinking: asking }">
     <section class="stage">
       <!-- 1. the question and the verdict, first -->
       <header class="qv">
-        <p v-if="asked && reading && reading.object" class="asked-line">
+        <p v-if="asking" class="thinking-line" role="status" aria-live="polite">
+          <span class="spinner" aria-hidden="true"></span>
+          <span>Reading <b>“{{ question }}”</b>, then looking up the closest materials NASA tested… <span class="muted">{{ waited }} s</span></span>
+        </p>
+        <p v-if="asked && reading && reading.object && !noMatch" class="asked-line">
           NASA never burned a {{ reading.object }}. The closest material NASA tested is <b>{{ material }}</b>
           <span class="muted">(a stand-in, not the object itself)</span>
           <br v-if="reading.made_of" /><span v-if="reading.made_of" class="muted small">Usually made of: {{ reading.made_of }}.</span>
@@ -223,7 +234,7 @@ onBeforeUnmount(() => { clearInterval(tick); clearTimeout(idle) })
             </template>
             <template v-else>
               <p class="verdict">We don't know. No matching test.</p>
-              <p class="why">NASA tested {{ material }} only in different air: {{ region.min }}–{{ region.max }}% oxygen at 1 atm.
+              <p class="why">NASA tested {{ material }} only in different air: {{ region.min === region.max ? region.min : `${region.min}–${region.max}` }}% oxygen at 1 atm.
                 Not tested here does not mean safe.</p>
             </template>
           </div>
@@ -248,11 +259,11 @@ onBeforeUnmount(() => { clearInterval(tick); clearTimeout(idle) })
       <!-- 2. the journey: where NASA tested, where nobody has -->
       <div class="journey-wrap">
         <JourneyStrip :places="store.places" :place-id="placeId" :status="statusOf" :material="material" :tests="withOxygen"
-                      :closest="inside ? null : closest" :two-stop="isNarrow" @pick="id => placeId = id" />
+                      :closest="inside || noMatch ? null : closest" :two-stop="isNarrow" @pick="id => placeId = id" />
       </div>
 
       <!-- 3. the evidence, compact -->
-      <div class="evidence">
+      <div v-if="!noMatch" class="evidence">
         <AirLines :tests="withOxygen" :place="place" :material="material" compact
                   :asked="asked && reading && reading.object ? reading.object : ''" />
       </div>
@@ -333,10 +344,16 @@ onBeforeUnmount(() => { clearInterval(tick); clearTimeout(idle) })
 
     <!-- the ask bar, docked at the bottom (not on the unattended stand) -->
     <form v-if="!stand" class="ask-bar" @submit.prevent="ask">
+      <div class="prompts" aria-label="Try a question">
+        <span class="muted small">Try:</span>
+        <button v-for="p in PROMPTS" :key="p" type="button" class="prompt" :disabled="asking"
+                :class="{ on: asking && question === p }" @click="askThis(p)">{{ p }}</button>
+      </div>
       <label class="sr" for="ask-input">Ask about something you own</label>
       <input id="ask-input" v-model="question" maxlength="300" autocomplete="off"
              placeholder="Ask about something you own, e.g. would my running shoe burn in a Moon rover?" />
-      <button class="cta" :disabled="asking || !question.trim()">{{ asking ? 'Reading…' : 'Ask' }}</button>
+      <button class="cta ask-btn" :disabled="asking || !question.trim()" :aria-busy="asking">
+        <span v-if="asking" class="spinner dark" aria-hidden="true"></span>{{ asking ? 'Reading…' : 'Ask' }}</button>
       <span class="muted small ask-note">AI maps your words; NASA supplies the data.</span>
     </form>
   </div>
