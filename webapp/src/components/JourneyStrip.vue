@@ -80,7 +80,7 @@ const bridge = () => {
     </defs>
     <!-- Earth, a reference only -->
     <circle cx="80" cy="266" r="68" class="earth" />
-    <image :href="'./img/earth.jpg'" x="12" y="198" width="136" height="136" clip-path="url(#earth-clip)" class="photo-earth" />
+    <image :href="'./img/earth.webp'" x="12" y="198" width="136" height="136" clip-path="url(#earth-clip)" class="photo-earth" />
     <circle cx="80" cy="266" r="68" class="air" />
     <text x="14" y="140" class="label">Earth</text>
     <text x="14" y="156" class="small">Fires here rise:</text>
@@ -88,7 +88,7 @@ const bridge = () => {
 
     <!-- the Moon -->
     <circle cx="629" cy="278" r="58" class="moon" />
-    <image :href="'./img/moon.jpg'" x="569" y="218" width="120" height="120" clip-path="url(#moon-clip)" class="photo-moon" />
+    <image :href="'./img/moon.webp'" x="569" y="218" width="120" height="120" clip-path="url(#moon-clip)" class="photo-moon" />
 
     <!-- the route: Earth to the Station, on to the Moon, then the long way to Mars (the line is broken: it is not to scale) -->
     <path d="M 128 214 Q 150 178 172 176 M 306 168 Q 334 176 360 168 M 448 166 Q 496 166 526 144" class="route" />
@@ -113,7 +113,7 @@ const bridge = () => {
         <text :x="s.x - 86" :y="s.y - 60" class="small" text-anchor="middle">↑ more O₂</text>
       </g>
       <!-- the place itself -->
-      <image :href="`./img/${s.icon}.png`" :x="s.x - s.size / 2" :y="s.y + 6" :width="s.size" :height="s.size" />
+      <image :href="`./img/${s.icon}.webp`" :x="s.x - s.size / 2" :y="s.y + 6" :width="s.size" :height="s.size" />
       <!-- the fire: solid if tested, a dashed question if not -->
       <circle v-if="s.st.tested" :cx="s.x" :cy="s.y - 6" r="22" class="flame" fill="url(#pale-blue-flame)"
               :style="{ transformOrigin: `${s.x}px ${s.y - 6}px` }" />
