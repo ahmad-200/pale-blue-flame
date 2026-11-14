@@ -37,46 +37,53 @@ const link = name => `#/experiment/${experimentByName(name)?.id}`
 
 <template>
   <h1>Will it burn here?</h1>
+  <p class="intro">Pick a place where people live in space, and something that could catch fire there.
+    We will show you every fire NASA has lit with it, and whether any of them happened in that kind of air.</p>
   <div class="burn">
     <aside class="panel">
-      <h3>You choose</h3>
-      <label>Place
+      <h3>Your choice</h3>
+      <label>1. Pick a place
         <select v-model="placeId">
           <option v-for="p in store.places" :key="p.id" :value="p.id">{{ p.name }}</option>
         </select>
       </label>
       <p class="air">{{ place.oxygen_pct }}% oxygen · {{ place.pressure_psia }} psi ({{ place.pressure_atm }} atm)</p>
       <p class="muted small">{{ place.note }} <a :href="place.source" target="_blank">Source</a></p>
-      <label>Material
+      <label>2. Pick a material
         <select v-model="material">
           <option v-for="[m, n] in materials" :key="m" :value="m">{{ m }} ({{ n }} tests)</option>
         </select>
       </label>
+      <p class="muted small">PMMA is acrylic, the clear plastic in Plexiglas. SIBAL is a cotton and fiberglass fabric.
+        Nomex is the flame-resistant fabric in firefighter suits.</p>
     </aside>
 
     <section class="panel map">
-      <h3>Gap map: where fire was tested</h3>
+      <h3>Where NASA has lit fires</h3>
       <GapMap :tests="store.tests" :material="material" :places="store.places" :place="place" :region="region" />
-      <p class="muted small">Dots are NASA test fires (yours in colour). Test pressure is assumed 1 atm: the tables do not record it.</p>
+      <p class="muted small">Each dot is one fire NASA lit (yours are green). The diamonds are places people live.
+        Higher up means more oxygen; further left means thinner air. The empty space is what nobody has tested yet.
+        (We assume the tests ran at normal cabin pressure, because NASA's tables don't say.)</p>
     </section>
   </div>
 
   <div class="burn-bottom">
     <section class="panel" :class="inside ? 'ok' : 'gap'">
-      <h3>The honest answer</h3>
+      <h3>The short answer</h3>
       <template v-if="!withOxygen.length">
-        <p>NASA burned {{ mine.length }} samples of <b>{{ material }}</b>, but their tables do not record the oxygen.
-           We cannot place them on the map yet.</p>
+        <p>NASA burned {{ mine.length }} samples of <b>{{ material }}</b>, but never wrote down the oxygen in those tests.
+           So we can't put them on the map yet, which is a bit frustrating.</p>
       </template>
       <template v-else-if="inside">
-        <p><b>Tested.</b> {{ withOxygen.length }} tests burned {{ material }} in air like this
-           ({{ region.min }}–{{ region.max }}% oxygen, about 1 atm).</p>
+        <p><b>Yes, NASA has tested this.</b></p>
+        <p>{{ withOxygen.length }} fires burned {{ material }} in air like this ({{ region.min }}–{{ region.max }}% oxygen,
+           at normal pressure). What happened in them is on each experiment's page.</p>
       </template>
       <template v-else>
-        <p><b>Nobody has burned {{ material }} in this air.</b></p>
-        <p>The nearest test: {{ closest.oxygen_pct }}% oxygen at {{ closest.pressure_atm }} atm
-           ({{ closest.experiment }} {{ closest.test }}). This place has {{ place.oxygen_pct }}% at {{ place.pressure_atm }} atm.</p>
-        <p class="muted small">"Not tested" does not mean safe.</p>
+        <p><b>We don't know, because nobody has tried.</b></p>
+        <p>NASA has never burned {{ material }} in air like this. The closest they came was {{ closest.oxygen_pct }}% oxygen
+           at normal pressure ({{ closest.experiment }} {{ closest.test }}). This place has {{ place.oxygen_pct }}% oxygen, in thinner air.</p>
+        <p class="muted small">Not tested is not the same as safe. It only means we are guessing.</p>
       </template>
       <p v-if="place.oxygen_pct > 31.4 && place.pressure_atm < 0.6" class="warn small">
         {{ store.warning.text }} <a :href="store.warning.source" target="_blank">Source</a>
@@ -84,8 +91,8 @@ const link = name => `#/experiment/${experimentByName(name)?.id}`
     </section>
 
     <section class="panel">
-      <h3>Nearest tests</h3>
-      <p class="muted small">The tests whose air was closest to this place, and how far off they are.</p>
+      <h3>The closest NASA got</h3>
+      <p class="muted small">The fires whose air was most like this place, and how far off they were. These are distances, not danger scores.</p>
       <ol class="nearest">
         <li v-for="t in nearest" :key="t.experiment + t.test">
           <a :href="link(t.experiment)">{{ t.experiment }} {{ t.test }}</a>
@@ -93,7 +100,7 @@ const link = name => `#/experiment/${experimentByName(name)?.id}`
           <small class="muted">{{ t.oxygen_pct }}% O2<template v-if="t.airflow_start_cm_s != null"> · {{ t.airflow_start_cm_s }} cm/s</template>
             · {{ t.material_text }}<template v-if="t.result"> · {{ t.result }}</template></small>
         </li>
-        <li v-if="!nearest.length" class="muted">No test with recorded oxygen for this material.</li>
+        <li v-if="!nearest.length" class="muted">None yet: no fire with this material has its oxygen written down.</li>
       </ol>
     </section>
   </div>

@@ -6,13 +6,13 @@ const props = defineProps({ id: String })
 const e = computed(() => experimentById(props.id))
 const tests = computed(() => e.value ? store.tests.filter(t => t.experiment === e.value.name) : [])
 const materials = computed(() => [...new Set(tests.value.map(t => t.material))].join(', '))
-const sections = [['objective', 'Goal'], ['approach', 'How they did it'], ['hypothesis', 'What they expected'], ['earth_benefits', 'Why it matters on Earth']]
+const sections = [['objective', 'What they wanted to know'], ['approach', 'How they did it'], ['hypothesis', 'What they expected'], ['earth_benefits', 'Why it matters down here']]
 </script>
 
 <template>
   <p v-if="!e">No experiment called {{ id }}. <a href="#/">Back home</a></p>
   <article v-else class="experiment">
-    <a href="#/" class="muted small">&larr; all experiments</a>
+    <a href="#/" class="muted small">&larr; back to all experiments</a>
     <h1>{{ e.name || e.id }}</h1>
     <p class="subtitle">{{ e.title }}</p>
     <p class="facts">
@@ -25,8 +25,9 @@ const sections = [['objective', 'Goal'], ['approach', 'How they did it'], ['hypo
 
     <section class="panel found">
       <h3>What they found</h3>
-      <p class="muted">Not written yet: a short summary from NASA's own record and papers comes next.</p>
-      <p v-if="tests.length">Our table has <b>{{ tests.length }}</b> material tests from this experiment ({{ materials }}).</p>
+      <p class="muted">We haven't written this part yet. Truth is, the results live mostly in the papers below, not in
+        NASA's tables, and we want to read them before we sum them up.</p>
+      <p v-if="tests.length">What we do have: <b>{{ tests.length }}</b> fires from this experiment in our table ({{ materials }}).</p>
     </section>
 
     <section v-for="[k, label] in sections" :key="k" v-show="e[k]">
@@ -35,7 +36,7 @@ const sections = [['objective', 'Goal'], ['approach', 'How they did it'], ['hypo
     </section>
 
     <section v-if="e.papers.length">
-      <h3>Papers ({{ e.papers.length }})</h3>
+      <h3>Read more ({{ e.papers.length }} papers)</h3>
       <ul class="papers">
         <li v-for="p in e.papers" :key="p.title">
           <a v-if="p.doi" :href="`https://doi.org/${p.doi}`" target="_blank">{{ p.title }}</a><span v-else>{{ p.title }}</span>
@@ -45,8 +46,8 @@ const sections = [['objective', 'Goal'], ['approach', 'How they did it'], ['hypo
     </section>
 
     <p class="actions">
-      <a :href="e.link" target="_blank" class="cta small">Open in NASA's database</a>
-      <span class="muted small">{{ e.raw_files }} raw files · {{ e.raw_size_gb }} GB</span>
+      <a :href="e.link" target="_blank" class="cta small">See it in NASA's database</a>
+      <span class="muted small">Behind it: {{ e.raw_files }} raw files, {{ e.raw_size_gb }} GB of video and sensor data.</span>
     </p>
   </article>
 </template>

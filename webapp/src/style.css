@@ -54,3 +54,4 @@ select { width: 100%; margin-top: 6px; padding: 8px; background: var(--bg); colo
 .prose { line-height: 1.6; white-space: pre-line; }
 .papers li { margin-bottom: 8px; }
 .actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.intro { font-size: 17px; line-height: 1.6; max-width: 760px; color: var(--muted); margin-top: 0; }

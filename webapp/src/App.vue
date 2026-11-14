@@ -25,7 +25,7 @@ onMounted(loadData)
   </header>
   <main>
     <p v-if="store.error" class="error">Could not load the data: {{ store.error }}</p>
-    <p v-else-if="!store.ready" class="muted">Loading NASA's fire data...</p>
+    <p v-else-if="!store.ready" class="muted">Gathering NASA's fires...</p>
     <template v-else>
       <BurnHere v-if="route.page === 'burn'" />
       <ExperimentCard v-else-if="route.page === 'experiment'" :id="route.id" />
