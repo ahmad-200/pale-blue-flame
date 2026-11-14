@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { store, experimentByName } from '../data.js'
 import GapMap from './GapMap.vue'
 import JourneyStrip from './JourneyStrip.vue'
@@ -39,6 +39,32 @@ const nearest = computed(() => withOxygen.value.map(t => {
 }).sort((a, b) => a.dist - b.dist).slice(0, 5))
 const closest = computed(() => nearest.value[0])
 const link = name => `#/experiment/${experimentByName(name)?.id}`
+
+// --- carousel: nobody at a stand clicks, so the page walks through examples by itself.
+// Each tested case at the Station is followed by the same material somewhere nobody has tried.
+const SLIDES = [
+  ['SIBAL (cotton-fiberglass)', 'iss'], ['SIBAL (cotton-fiberglass)', 'moon'],
+  ['PMMA (acrylic)', 'iss'], ['PMMA (acrylic)', 'rover'],
+  ['Nomex', 'iss'], ['Nomex', 'airlock'],
+  ['silicone', 'iss'], ['silicone', 'moon'],
+]
+const STEP_MS = 3000, IDLE_MS = 20000
+const slide = ref(0), auto = ref(true)
+let tick = null, idle = null
+function show(i) {
+  slide.value = (i + SLIDES.length) % SLIDES.length
+  ;[material.value, placeId.value] = SLIDES[slide.value]
+}
+function start() { clearInterval(tick); auto.value = true; tick = setInterval(() => show(slide.value + 1), STEP_MS) }
+function stop() { clearInterval(tick); auto.value = false }
+// someone touched it: pause, and come back to the tour after a quiet spell
+function touched() { stop(); clearTimeout(idle); idle = setTimeout(start, IDLE_MS) }
+// a change that does not match the current slide came from a person (Vue runs this after the change, so compare, don't flag)
+watch([material, placeId], ([m, p]) => { const [sm, sp] = SLIDES[slide.value]; if (m !== sm || p !== sp) touched() })
+function pick(i) { show(i); touched() }
+function toggle() { clearTimeout(idle); auto.value ? stop() : start() }
+onMounted(() => { show(0); start() })
+onBeforeUnmount(() => { clearInterval(tick); clearTimeout(idle) })
 </script>
 
 <template>
@@ -56,6 +82,14 @@ const link = name => `#/experiment/${experimentByName(name)?.id}`
       </select>
     </label>?
   </h1>
+  <div class="tour" :class="{ paused: !auto }">
+    <button class="tour-toggle" @click="toggle" :aria-label="auto ? 'Pause the tour' : 'Play the tour'">{{ auto ? 'Pause' : 'Play' }}</button>
+    <div class="tour-dots" role="tablist" aria-label="Examples">
+      <button v-for="(s, i) in SLIDES" :key="i" role="tab" :aria-selected="i === slide" :class="{ on: i === slide }"
+              :aria-label="`${s[0]} in ${store.places.find(p => p.id === s[1])?.name}`" @click="pick(i)"></button>
+    </div>
+    <div class="tour-bar"><span :key="slide + String(auto)" :style="{ animationDuration: STEP_MS + 'ms' }"></span></div>
+  </div>
   <p class="intro">Pick a place where people live in space, and something that could catch fire there.
     We will show you every fire NASA has lit with it, and whether any of them happened in that kind of air.</p>
 

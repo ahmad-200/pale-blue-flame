@@ -1,13 +1,13 @@
 <script setup>
 // Replays a real NASA fire from its heat-sensor log (Saffire-I). D3 does the maths (scales, smooth lines,
 // the timer); Vue draws the SVG. Ten seconds of animation stand for about sixteen minutes of the real fire.
-import { ref, computed, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { scaleLinear } from 'd3-scale'
 import { line, curveMonotoneX } from 'd3-shape'
 import { timer } from 'd3-timer'
 import { max, range } from 'd3-array'
 
-const props = defineProps({ data: Object })
+const props = defineProps({ data: Object, auto: Boolean })
 const W = 640, H = 220, L = 40, R = 16, T = 16, B = 34
 const pts = computed(() => props.data.points)
 const T_END = computed(() => pts.value[pts.value.length - 1].t)
@@ -18,11 +18,19 @@ const SENSORS = [{ k: 's2', c: '#F2A65A' }, { k: 's3', c: '#E8C07A' }, { k: 's1'
 const now = ref(T_END.value)          // the moment shown; starts on the full picture
 const playing = ref(false)
 let t = null
+let again = null
 function play() {
-  t?.stop(); playing.value = true; now.value = 0
-  t = timer(ms => { now.value = Math.min(T_END.value, ms / 10000 * T_END.value); if (now.value >= T_END.value) { t.stop(); playing.value = false } })
+  t?.stop(); clearTimeout(again); playing.value = true; now.value = 0
+  t = timer(ms => {
+    now.value = Math.min(T_END.value, ms / 10000 * T_END.value)
+    if (now.value >= T_END.value) {
+      t.stop(); playing.value = false
+      if (props.auto) again = setTimeout(play, 4000)   // hold the finished chart, then burn again
+    }
+  })
 }
-onBeforeUnmount(() => t?.stop())
+onMounted(() => { if (props.auto) play() })
+onBeforeUnmount(() => { t?.stop(); clearTimeout(again) })
 
 const shown = computed(() => pts.value.filter(p => p.t <= now.value))
 const path = k => line().x(p => x.value(p.t)).y(p => y.value(p[k])).curve(curveMonotoneX)(shown.value) || ''

@@ -39,7 +39,7 @@ const totalTests = computed(() => store.experiments.reduce((s, e) => s + e.test_
     <p class="lede">This is not an animation we made up. A sheet of cotton and fiberglass fabric, almost a metre long, was set alight
       on a cargo ship after it left the Space Station, with a gentle 20 cm/s breeze. Four heat sensors recorded it.
       Press play: two sensors warm up first, then the other two, about two minutes later. That is the flame moving.</p>
-    <FireReplay :data="store.saffire" />
+    <FireReplay :data="store.saffire" auto />
     <p class="muted small">Saffire-I, NASA. Raw sensor values, about one reading every 30 seconds.
       <a href="#/experiment/PSI-98">About this experiment</a></p>
   </section>
