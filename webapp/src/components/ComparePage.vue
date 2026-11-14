@@ -26,18 +26,15 @@ const keys = computed(() => rows.value.length ? Object.keys(rows.value[0]) : [])
 </script>
 
 <template>
-  <article class="compare">
-    <a href="#/" class="muted small">&larr; back to all experiments</a>
-    <h1>Compare two investigations</h1>
-    <p v-if="pair.length < 2">Pick two experiments from an experiment page.</p>
-    <div v-else class="table-wrap">
+  <div v-if="pair.length === 2" class="compare">
+    <div class="table-wrap">
       <table>
-        <thead><tr><th></th><th v-for="e in pair" :key="e.id"><a :href="`#/experiment/${e.id}`">{{ e.name || e.id }}</a><br /><small class="muted">{{ e.title }}</small></th></tr></thead>
+        <thead><tr><th></th><th v-for="e in pair" :key="e.id">{{ e.name || e.id }}<br /><small class="muted">{{ e.title }}</small></th></tr></thead>
         <tbody>
           <tr v-for="k in keys" :key="k"><th>{{ k }}</th><td v-for="(r, i) in rows" :key="i">{{ r[k] }}</td></tr>
         </tbody>
       </table>
     </div>
     <p class="muted small">Summaries drafted by AI from NASA's records; numbers from our cleaned copy of NASA's test tables.</p>
-  </article>
+  </div>
 </template>

@@ -19,6 +19,21 @@ We made it for the NASA Space Apps Challenge 2026, for the challenge [Flame in F
 
 It sounds like a small answer. Turns out it is the finding. NASA's proposed atmosphere for Moon and Mars habitats is 34% oxygen at 0.56 atm, and no material fire in the data we used comes near it. One NASA investigation, ACME BRE, says in its own record that burning continued without airflow in elevated-oxygen air like that. In normal 21% air, the same flames went out.
 
+## What is on the page
+
+The site is one page.
+
+- **The first screen.** The question, the verdict, a picture of the places (Earth, the Space Station, a spacewalk, the Moon, Mars) and the oxygen chart. Arrows appear on the chart one at a time: where NASA's fires burned, where your place is, and the part that nobody tested.
+- **Look closer.** One row of tabs below the first screen:
+  - *The gap*: each material fire by oxygen and cabin pressure, with the places where people plan to live.
+  - *Experiments*: the 24 investigations, ranked for the place you chose and sorted into prevent, detect and suppress. Open one to read its summary. You can compare two.
+  - *A real fire*: the heat sensors of Saffire-I, replayed.
+  - *Back on Earth*: where space fire safety came home.
+  - *The data*: the tests for each material, as a chart, a table and a CSV file.
+- **The ask bar.** It stays at the bottom of the screen.
+
+Move the pointer across a chart to read its values. Click a dot to open its experiment, or a place to choose it.
+
 ## What is in this repository
 
 | Folder | Contents |
@@ -26,7 +41,7 @@ It sounds like a small answer. Turns out it is the finding. NASA's proposed atmo
 | `notebooks/01_explore_the_data.ipynb` | A tour of NASA's fire data: 24 investigations, their test tables, papers and raw files. Read this first. |
 | `notebooks/02_clean_the_data.ipynb` | The steps that change the test tables into one table of 263 material tests. |
 | `data/` | The files that the site reads: `material_tests.csv`, `experiments.json`, `places.json`, `summaries.json` and `saffire1_sensors.json`. |
-| `webapp/` | The website (Vue 3, Vite, SVG and D3). |
+| `webapp/` | The website (Vue 3, Vite, SVG and D3). The photographs are in `webapp/public/img/`. |
 | `backend/` | The question service (FastAPI and LangGraph, with DeepSeek). |
 
 ## Run the site
@@ -88,5 +103,19 @@ Know these limits before you use the data:
 - "No matching test" applies only to the data that we used. It does not apply to all fire tests.
 - The atmospheres for the Moon, the rover and Mars are proposals. Real missions can be different.
 - The background is a tribute to the Voyager 1 Pale Blue Dot photograph. It is a drawing, not a star map.
+- The distances in the picture are real numbers, but the picture is not to scale.
+- No Moon base exists. The picture of the Moon base is an Apollo 14 lunar module.
+
+The photographs are from the [NASA Image and Video Library](https://images.nasa.gov):
+
+| Picture | NASA image |
+|---|---|
+| Earth | Apollo 17, `as17-148-22727` |
+| Moon | Galileo, `PIA00405` |
+| Mars | Viking, `PIA00407` |
+| Space Station | STS-135, `s135e011814` |
+| Spacewalk | STS-41B, Bruce McCandless, `s84-27017` |
+| Pressurized rover | Lunar Electric Rover prototype, `jsc2008e138809` |
+| Moon base | Apollo 14 lunar module, `as14-66-09277` |
 
 We hope one thing is hard to miss when you leave. We know a great deal about fire in one kind of air, and almost nothing about the air we are about to live in.

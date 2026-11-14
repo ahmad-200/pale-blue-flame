@@ -281,8 +281,8 @@ details.map[open] summary { margin-bottom: 12px; }
 
 /* the ask bar, docked at the bottom of the laptop view */
 .ask-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; display: flex; gap: 10px; align-items: center;
-  padding: 12px max(16px, calc((100vw - 1080px) / 2 + 28px)); background: rgba(5, 7, 11, .88);
-  backdrop-filter: blur(8px); border-top: 1px solid var(--rule); }
+  padding: 12px max(16px, calc((100vw - 1080px) / 2 + 28px)); background: rgba(5, 7, 11, .95);
+  border-top: 1px solid var(--rule); }
 .ask-bar input { flex: 1; min-width: 0; font: inherit; color: var(--hull); background: var(--orbit-2); border: 1px solid var(--rule);
   border-radius: 999px; padding: 11px 18px; }
 .ask-bar input:focus-visible { outline: none; border-color: var(--flame); }
@@ -383,3 +383,287 @@ button.link { background: none; border: 0; padding: 0; color: var(--flame); font
 
 .earth-section { margin: 48px 0; } .earth-section h3 { font-size: 17px; margin: 24px 0 8px; }
 .spinoffs { padding-left: 20px; } .spinoffs li { margin-bottom: 10px; line-height: 1.55; }
+
+/* ===== one page: a quiet header, the stage, then one row of tabs ===== */
+.top .tagline { text-align: right; }
+@media (max-width: 760px) { .top .tagline { display: none; } }
+.burn .stage-foot { justify-content: flex-end; border-top: 0; padding-top: 0; }
+/* the stage stops short of the screen's end, so the tabs show there is more below */
+.burn:not(.stand) .stage { min-height: calc(100dvh - 285px); }
+.more-ai { margin: 28px 0 0; }
+
+.closer { margin: 44px 0 0; scroll-margin-top: 12px; }
+.tabs-label { margin: 0 auto 8px; max-width: none; text-align: center; font-size: 12px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--regolith); }
+.tabs { display: flex; justify-content: center; gap: 4px 34px; flex-wrap: wrap; padding-bottom: 14px; border-bottom: 1px solid var(--rule); }
+.tabs button { background: none; border: 0; padding: 4px 0; cursor: pointer; font: inherit; font-variation-settings: var(--wide);
+  font-weight: 700; font-size: 17px; letter-spacing: .04em; text-transform: uppercase; color: #5C667B; transition: color .15s; }
+.tabs button:hover { color: var(--regolith); }
+.tabs button.on { color: var(--hull); }
+.pane { padding: 36px 0 8px; min-height: 420px; }
+.pane p { margin: 0 0 14px; }
+.pane .take { font-variation-settings: var(--wide); font-weight: 700; font-size: 24px; line-height: 1.2; max-width: 24ch; margin-bottom: 16px; }
+.pane-note { max-width: 80ch; margin-bottom: 8px; }
+.split { display: grid; grid-template-columns: 1fr 1.25fr; gap: 48px; align-items: center; }
+@media (max-width: 860px) { .split { grid-template-columns: 1fr; gap: 20px; } }
+.pane details { margin-top: 22px; border-top: 1px solid var(--rule); padding-top: 14px; }
+.pane summary, .detail summary { cursor: pointer; color: var(--regolith); transition: color .15s; }
+.pane summary:hover, .detail summary:hover, details[open] > summary { color: var(--hull); }
+details[open] > summary { margin-bottom: 10px; }
+
+/* experiments: a topic, its studies as squares, three cards, and a way to see the next three */
+.topic { display: grid; grid-template-columns: 190px repeat(3, 1fr) 44px; gap: 28px; align-items: start; padding: 30px 0;
+  border-bottom: 1px solid var(--rule); }
+.topic-head h3 { font-variation-settings: var(--wide); font-size: 20px; margin: 0; }
+.topic-head p { margin: 0; }
+.waffle { display: grid; grid-template-columns: repeat(9, 14px); gap: 3px; margin: 10px 0; }
+.waffle a { width: 14px; height: 14px; background: #2A3550; transition: background .15s; }
+.waffle a:hover { background: var(--regolith); }
+.waffle a.shown { background: var(--flame-deep); }
+.waffle a.open { background: var(--hull); }
+.card { display: flex; flex-direction: column; gap: 6px; color: var(--hull); text-decoration: none; padding-left: 14px;
+  border-left: 2px solid var(--rule); transition: border-color .15s; }
+.card:hover, .card.open { border-left-color: var(--flame); }
+.card-title { color: var(--regolith); font-size: 15px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.card-why { font-size: 15px; line-height: 1.45; }
+.card .more { color: var(--flame); font-size: 14px; text-decoration: underline; text-underline-offset: 3px; }
+.next { align-self: center; width: 44px; height: 44px; display: grid; place-items: center; background: var(--orbit-2); color: var(--regolith);
+  border: 1px solid var(--rule); border-radius: 8px; cursor: pointer; transition: color .15s, border-color .15s, transform .12s; }
+.next:hover { color: var(--hull); border-color: var(--regolith); } .next:active { transform: scale(.94); }
+@media (max-width: 860px) {
+  .topic { grid-template-columns: 1fr; gap: 16px; }
+  .next { justify-self: start; }
+}
+
+/* an investigation, opened in place */
+.detail { margin: 0; padding: 26px 0 30px 22px; border-left: 3px solid var(--flame-deep); border-bottom: 1px solid var(--rule); scroll-margin-top: 16px; }
+.detail header { display: flex; justify-content: space-between; gap: 20px; align-items: start; margin-bottom: 12px; }
+.detail h3 { font-variation-settings: var(--wide); font-size: 24px; margin: 0 0 4px; }
+.detail h3 .pill { vertical-align: middle; margin-left: 8px; font-variation-settings: normal; font-weight: 400; }
+.detail header p { margin: 0; }
+.detail .close { flex: none; font-size: 14px; color: var(--regolith); border: 1px solid var(--rule); border-radius: 999px; padding: 4px 14px; text-decoration: none; }
+.detail .close:hover { color: var(--hull); border-color: var(--regolith); }
+.detail p { max-width: 75ch; }
+.detail .src { font-size: 12px; color: var(--regolith); border: 1px solid var(--rule); border-radius: 999px; padding: 0 8px; margin-left: 4px; white-space: nowrap; }
+.folds { margin: 18px 0; border-top: 1px solid var(--rule); }
+.folds details { border-bottom: 1px solid var(--rule); padding: 10px 0; }
+.folds h4 { margin: 14px 0 4px; font-size: 15px; color: var(--regolith); }
+.detail-foot { display: flex; align-items: center; gap: 10px 22px; flex-wrap: wrap; max-width: none; margin: 0; }
+.detail-foot .compare-pick { width: auto; margin-left: 6px; font: inherit; font-size: 14px; color: var(--hull); background: var(--orbit-2);
+  border: 1px solid var(--rule); border-radius: 6px; padding: 3px 6px; }
+.detail .compare { margin-top: 18px; }
+
+/* a real fire */
+.fire-top { margin-bottom: 10px; }
+.fire-top .hero-flame span { width: min(22vw, 200px); }
+@media (max-width: 860px) { .fire-top .hero-flame { display: none; } }
+.pane .replay-chart { max-height: 300px; }
+
+/* back on Earth: four short items, not paragraphs */
+.pane .spinoffs { list-style: none; padding: 0; margin: 8px 0 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; }
+.pane .spinoffs li { display: flex; flex-direction: column; gap: 6px; margin: 0; padding-top: 14px; border-top: 2px solid var(--rule); line-height: 1.45; }
+.pane .spinoffs b { font-variation-settings: var(--wide); font-size: 17px; }
+.pane .spinoffs a, .pane .spinoffs .small { font-size: 14px; }
+@media (max-width: 860px) { .pane .spinoffs { grid-template-columns: 1fr 1fr; } }
+
+/* the data */
+.pane.modellers { margin: 0; }
+.show-more { margin-top: 14px; background: none; border: 1px solid var(--rule); color: var(--regolith); border-radius: 999px; padding: 5px 16px;
+  font: inherit; font-size: 14px; cursor: pointer; transition: color .15s, border-color .15s; }
+.show-more:hover { color: var(--hull); border-color: var(--regolith); }
+.limits { padding-left: 20px; margin: 0; max-width: 80ch; } .limits li { margin-bottom: 8px; }
+/* fit the stage and the tab row above the ask bar on a laptop screen */
+.burn:not(.stand) .stage { min-height: 0; gap: 8px; }
+.burn:not(.stand) .verdict-block .verdict { font-size: clamp(28px, 3vw, 46px); }
+.burn:not(.stand) .qv .burn-q { font-size: clamp(24px, 2.8vw, 40px); }
+.burn:not(.stand) .journey-wrap .journey { height: 27vh; min-height: 190px; max-height: none; }
+.burn.answering:not(.stand) .journey-wrap .journey { height: 22vh; }
+.burn:not(.stand) .evidence .airlines { max-height: 15vh; }
+.closer { margin-top: 18px; }
+.ask-bar { background: var(--orbit); }
+main { padding-top: 8px; }
+/* the ask bar floats: a lighter, rounded panel with space around it, clearly apart from the page */
+.ask-bar { left: 50%; right: auto; bottom: 18px; transform: translateX(-50%); width: min(1040px, calc(100% - 32px));
+  padding: 10px 14px 12px; gap: 8px 10px; background: #18233A; border: 1px solid #2E3F5E; border-radius: 20px;
+  box-shadow: 0 14px 44px rgba(0, 0, 0, .65), 0 0 0 6px rgba(5, 7, 11, .55); }
+.ask-bar input { background: #0E1626; border-color: #2E3F5E; padding: 10px 18px; }
+.ask-bar .prompt { border-color: #33466A; color: #C9D3E4; }
+.ask-bar .cta { padding: 10px 22px; }
+main { padding-bottom: 170px; }
+/* shorter laptop screens: a smaller picture, so the tab row still shows above the ask bar */
+@media (max-height: 880px) {
+  .burn:not(.stand) .journey-wrap .journey { height: 21vh; min-height: 150px; }
+  .burn:not(.stand) .evidence .airlines { max-height: 13vh; }
+  .burn:not(.stand) .material-line { display: none; }
+  .tabs-label { display: none; }
+  .closer { margin-top: 6px; }
+}
+
+/* the top of the stage: a quiet question, then the verdict, with room between them */
+.burn:not(.stand) .qv .burn-q { font-size: clamp(19px, 1.9vw, 27px); font-weight: 600; font-variation-settings: 'wdth' 100;
+  letter-spacing: 0; color: var(--regolith); margin: 0 0 16px; line-height: 1.35; }
+.burn:not(.stand) .qv .inline-select select { border-bottom-width: 1px; }
+.burn:not(.stand) .verdict-block { margin: 0 0 6px; }
+.burn:not(.stand) .verdict-block .verdict { font-size: clamp(32px, 4vw, 60px); margin: 0 0 16px; }
+.burn:not(.stand) .verdict-block .why { color: var(--regolith); font-size: 17px; }
+.burn.answering:not(.stand) .verdict-block .verdict { font-size: clamp(28px, 3.2vw, 48px); }
+.burn:not(.stand) .asked-line { margin-bottom: 12px; }
+.burn:not(.stand) .stage { gap: 14px; }
+main { padding-top: 20px; }
+
+/* charts */
+.airlines .fire { cursor: pointer; }
+.gapmap { display: block; }
+.gapmap .axis { font-size: 12px; }
+.gapmap .dot.other { fill: #34425E; } .gapmap .dot.mine { fill: var(--flame); }
+.gapmap .dot.picked { stroke: var(--hull); stroke-width: 2; }
+.gapmap .dot:hover { stroke: var(--hull); stroke-width: 1.5; }
+.gapmap .region { fill: none; stroke: var(--flame-deep); stroke-dasharray: 4 3; pointer-events: none; }
+.gapmap .region-text { fill: var(--flame); font-size: 12px; font-weight: 600; }
+.gapmap .limit-text { font-size: 11px; }
+.gapmap .place { cursor: pointer; outline: none; }
+.gapmap .place .hit { fill: transparent; }
+.gapmap .place .diamond { fill: #6B7593; transition: fill .15s; }
+.gapmap .place text { fill: var(--regolith); font-size: 12px; }
+.gapmap .place:hover .diamond, .gapmap .place:focus-visible .diamond { fill: var(--hull); }
+.gapmap .place:hover text { fill: var(--hull); }
+.gapmap .place.on .diamond { fill: var(--ember); } .gapmap .place.on text { fill: var(--ember); font-weight: 700; }
+.gapmap .pick rect { fill: #18233A; stroke: #2E3F5E; } .gapmap .pick a { fill: var(--flame); text-decoration: underline; cursor: pointer; }
+.chart-hint { margin: 8px 0 0; text-align: center; max-width: none; }
+
+/* what NASA burned: one bar per material */
+.bars { display: grid; gap: 2px; max-width: 720px; margin: 4px 0 12px; }
+.bars button { display: grid; grid-template-columns: 210px 1fr 36px; gap: 14px; align-items: center; padding: 6px 8px; background: none; border: 0;
+  border-radius: 6px; color: var(--regolith); font: inherit; font-size: 15px; text-align: left; cursor: pointer; transition: background .15s, color .15s; }
+.bars button:hover { background: var(--orbit-2); color: var(--hull); }
+.bars button.on { color: var(--hull); font-weight: 700; }
+.bar-track { height: 10px; }
+.bar-fill { display: block; height: 100%; min-width: 3px; background: #34425E; border-radius: 2px; transition: background .15s; }
+.bars button.on .bar-fill { background: var(--flame); }
+.bar-n { text-align: right; font-variant-numeric: tabular-nums; }
+.table-title { font-size: 17px; margin: 26px 0 8px; }
+@media (max-width: 700px) { .bars button { grid-template-columns: 130px 1fr 30px; font-size: 14px; } }
+
+/* every place glows the same way: blue = tested, amber with a ? = nobody has tried */
+.journey .flame { animation: flicker 1.6s ease-in-out infinite; }
+.journey .ring { fill: none; stroke: var(--ember); stroke-width: 1.5; stroke-dasharray: 3 3; }
+.journey .q { animation: none; font-size: 15px; }
+
+/* hover read-outs, as on a trading chart */
+.airlines { touch-action: pan-y; }
+.airlines .guide line { stroke: var(--regolith); stroke-dasharray: 2 3; }
+.airlines .guide circle { fill: none; stroke: var(--hull); stroke-width: 2; }
+.airlines .guide text { fill: var(--hull); font-size: 13px; font-weight: 600; }
+.airlines .guide { pointer-events: none; }
+.replay-chart { cursor: crosshair; touch-action: pan-y; }
+.replay-chart .cross { pointer-events: none; }
+.replay-chart .cross line { stroke: var(--regolith); stroke-dasharray: 2 3; }
+.replay-chart .cross circle { stroke: var(--orbit); stroke-width: 1.5; }
+.replay-chart .cross rect { fill: #18233A; stroke: #2E3F5E; }
+.replay-chart .cross text { fill: var(--regolith); font-size: 10.5px; }
+.replay-chart .cross .when { fill: var(--hull); font-weight: 700; }
+.replay-chart .cross .val { fill: var(--hull); font-variant-numeric: tabular-nums; }
+.gapmap { cursor: crosshair; touch-action: pan-y; }
+.gapmap .dot { cursor: pointer; }
+.gapmap .cross { pointer-events: none; }
+.gapmap .cross line { stroke: #55627D; stroke-dasharray: 2 3; }
+.gapmap .cross.snap line { stroke: var(--regolith); }
+.gapmap .cross rect { fill: var(--hull); }
+.gapmap .cross text { fill: var(--orbit); font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* arrows that explain the chart one step at a time: the newest blinks, then holds still */
+.airlines .callout { animation: fade-in-full .35s ease both; }
+.airlines .callout path { animation: none; }
+.airlines .callout.now path { animation: blink 1s steps(1, end) 5; }
+.airlines .callouts { transition: opacity .15s; } .airlines .callouts.quiet { opacity: .15; }
+.airlines .gap, .airlines .gap-text { animation: fade-in-full .5s ease both; }
+@keyframes fade-in-full { from { opacity: 0 } to { opacity: 1 } }
+.gapmap .gap-arrow { pointer-events: none; animation: fade-in-full .5s ease .6s both; }
+.gapmap .gap-arrow path { fill: none; stroke: var(--alert); stroke-width: 2.5; stroke-linecap: round; animation: blink 1s steps(1, end) .6s 5; }
+.gapmap .gap-arrow text { fill: var(--alert); font-size: 12px; font-weight: 700; paint-order: stroke; stroke: #0D1320; stroke-width: 4px; }
+/* the oxygen line is taller now (it carries its arrows): give it the room, take a little from the picture */
+.burn:not(.stand) .evidence .airlines { max-height: 21vh; }
+.burn:not(.stand) .journey-wrap .journey { height: 24vh; }
+@media (max-height: 880px) {
+  .burn:not(.stand) .journey-wrap .journey { height: 19vh; min-height: 140px; }
+  .burn:not(.stand) .evidence .airlines { max-height: 20vh; }
+}
+.stand-mode .burn .evidence .airlines { max-height: 22vh; }
+/* the verdict stays on one line on a laptop; the stage ends above the ask bar */
+.burn:not(.stand) .verdict-block .verdict { font-size: clamp(28px, 3.3vw, 50px); max-width: none; margin-bottom: 12px; }
+.burn:not(.stand) .journey-wrap .journey { height: 23vh; }
+.burn:not(.stand) .stage { gap: 10px; }
+.closer { margin-top: 10px; }
+@media (max-height: 880px) {
+  .burn:not(.stand) .journey-wrap .journey { height: 17vh; min-height: 130px; }
+  .burn:not(.stand) .evidence .airlines { max-height: 19vh; }
+  .burn:not(.stand) .qv .burn-q { margin-bottom: 8px; }
+  main { padding-top: 6px; }
+}
+.folds details { margin-top: 0; border-top: 0; padding: 10px 0; }
+.burn:not(.stand) .verdict-block .verdict { font-size: clamp(28px, 3vw, 46px); }
+.leftover { margin: 18px 0 0; max-width: none; text-align: center; }
+/* phones: the tabs stay on one row and scroll sideways */
+@media (max-width: 700px) {
+  .tabs { flex-wrap: nowrap; justify-content: flex-start; gap: 22px; overflow-x: auto; scrollbar-width: none; }
+  .tabs button { flex: none; font-size: 14px; }
+  .pane { padding-top: 24px; min-height: 0; }
+  .pane .take { font-size: 20px; }
+}
+.gapmap .place rect.hit, .gapmap .place.on rect.hit { fill: transparent; }
+.journey .bridge { pointer-events: none; }
+.journey .bridge text { paint-order: stroke; stroke: var(--orbit); stroke-width: 5px; stroke-linejoin: round; }
+/* real photographs of Earth (Apollo 17) and the Moon (Galileo), dimmed so the labels on them stay easy to read */
+.journey .photo-earth { opacity: .92; }
+.journey .photo-moon { opacity: .6; }
+.journey .air { fill: none; stroke: rgba(159, 211, 255, .35); stroke-width: 2; }
+.journey .stop .small, .journey .stop .label { paint-order: stroke; stroke: rgba(5, 7, 11, .75); stroke-width: 3px; stroke-linejoin: round; }
+.journey .photo-earth { opacity: 1; } .journey .photo-moon { opacity: .85; }
+.journey .route-break { fill: none; stroke: var(--regolith); stroke-width: 1.5; }
+.journey .small.dist { fill: #6F7A90; font-size: 11px; }
+.burn:not(.stand) .journey-wrap .journey { height: 25vh; }
+@media (max-height: 880px) { .burn:not(.stand) .journey-wrap .journey { height: 19vh; min-height: 140px; } }
+.burn:not(.stand) .journey-wrap .journey { height: 29vh; }
+@media (max-height: 880px) { .burn:not(.stand) .journey-wrap .journey { height: 22vh; min-height: 150px; } }
+@media (max-height: 740px) { .burn:not(.stand) .journey-wrap .journey { height: 20vh; min-height: 140px; } }
+
+/* ===== use the page: a wider column, a bigger picture and chart; the tabs follow below ===== */
+main { max-width: 1280px; }
+footer { max-width: 1280px; }
+.ask-bar { width: min(1224px, calc(100% - 32px)); }
+/* the example questions open when the box is used, so the bar stays slim */
+.ask-bar .prompts { display: none; }
+.ask-bar:focus-within .prompts { display: flex; }
+main { padding-bottom: 120px; }
+.burn:not(.stand) .stage { position: relative; gap: 12px; }
+.burn:not(.stand) .journey-wrap .journey { height: auto; width: auto; max-width: 100%; max-height: 40vh; aspect-ratio: 960 / 340; min-height: 0; }
+.burn.answering:not(.stand) .journey-wrap .journey { height: auto; max-height: 34vh; }
+.burn:not(.stand) .evidence .airlines { max-height: 24vh; }
+.burn:not(.stand) .verdict-block .verdict { font-size: clamp(28px, 3.4vw, 54px); }
+.more-below { justify-self: center; background: none; border: 0; padding: 4px 10px; font: inherit; font-size: 14px; color: var(--regolith);
+  cursor: pointer; transition: color .15s; }
+.more-below::before { content: '↓  '; color: var(--flame); }
+.more-below:hover { color: var(--hull); }
+.closer { margin-top: 26px; scroll-margin-top: 16px; }
+@media (min-width: 900px) {
+  .burn:not(.stand) .stage-foot { position: absolute; top: 2px; right: 0; }
+  .burn:not(.stand) .qv .burn-q, .burn:not(.stand) .asked-line { padding-right: 330px; }
+}
+@media (max-height: 880px) {
+  .burn:not(.stand) .journey-wrap .journey { height: auto; max-height: 38vh; min-height: 0; }
+  .burn:not(.stand) .evidence .airlines { max-height: 23vh; }
+  .tabs-label { display: block; }
+}
+@media (max-height: 740px) { .burn:not(.stand) .journey-wrap .journey { height: auto; max-height: 36vh; min-height: 0; } }
+/* phones: everything at its natural size, stacked */
+@media (max-width: 700px) {
+  main { padding-left: 16px; padding-right: 16px; }
+  .burn:not(.stand) .journey-wrap .journey { width: 100%; max-height: none; }
+  .burn:not(.stand) .evidence .airlines { width: 100%; max-height: none; }
+  .burn:not(.stand) .verdict-block .verdict { font-size: 30px; }
+  .more-below { font-size: 13px; text-align: center; }
+  .ask-bar { bottom: 10px; padding: 8px 10px; border-radius: 16px; }
+}
+.burn:not(.stand) .journey-wrap .journey { max-height: 37vh; }
+@media (max-height: 880px) { .burn:not(.stand) .journey-wrap .journey { max-height: 35vh; } }
+@media (max-width: 700px) { .burn:not(.stand) .journey-wrap .journey { max-height: none; } }

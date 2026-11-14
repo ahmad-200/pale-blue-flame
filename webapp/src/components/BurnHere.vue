@@ -1,14 +1,16 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
-import { store, experimentByName } from '../data.js'
+import { store } from '../data.js'
 import JourneyStrip from './JourneyStrip.vue'
 import MaterialIcon from './MaterialIcon.vue'
 import AirLines from './AirLines.vue'
+import LookCloser from './LookCloser.vue'
 
-const props = defineProps({ stand: Boolean })   // ?stand=1: the full-screen exhibition view
+const props = defineProps({ stand: Boolean, route: Object })   // ?stand=1: the full-screen exhibition view
 const placeId = ref('moon')
 const material = ref('SIBAL (cotton-fiberglass)')
 const place = computed(() => store.places.find(p => p.id === placeId.value))
+const short = name => name.replace(/ \(.*\)/, '')   // "Spacewalk prep (airlock 'campout')" -> "Spacewalk prep"
 
 const materials = computed(() => {
   const n = {}
@@ -31,6 +33,7 @@ const statusOf = p => {
   return { tested, count: tested ? withOxygen.value.length : 0 }
 }
 const inside = computed(() => statusOf(place.value).tested)
+const nothing = () => ({ tested: false, count: 0 })   // no material matched the question: no fires to show anywhere
 
 // nearest = smallest gap in oxygen (10 points) and pressure (0.5 atm) weighted alike; shown as plain differences
 // plain words for the difference: "the same air as here", or what this place has more or less of
@@ -46,7 +49,6 @@ const nearest = computed(() => withOxygen.value.map(t => {
            gap: gapWords(dO, dP) }
 }).sort((a, b) => a.dist - b.dist).slice(0, 5))
 const closest = computed(() => nearest.value[0])
-const link = name => `#/experiment/${experimentByName(name)?.id}`
 
 // what each material is, in everyday words (SIBAL from NASA's Saffire-I record)
 const WHAT = {
@@ -90,6 +92,9 @@ watch([material, placeId], ([m, p]) => {
   if (m !== sm || p !== sp) { noMatch.value = false; touched() }
 })
 function pick(i) { show(i); touched() }
+// reading the tabs below: stop the tour for good (Play starts it again), so the page does not change under the reader
+function holdTour() { stop(); clearTimeout(idle) }
+function toCloser() { holdTour(); document.getElementById('closer')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }
 function toggle() { clearTimeout(idle); if (auto.value) stop(); else backToTour() }
 function backToTour() { asked.value = false; reading.value = null; noMatch.value = false; question.value = ''; show(slide.value); start() }
 onMounted(() => { show(0); start() })
@@ -108,7 +113,6 @@ const noMatch = ref(false)   // the AI found no material we have: say so, never 
 
 // the place for the story's footer: which NASA experiments the dots come from
 const sources = computed(() => [...new Set(withOxygen.value.map(t => t.experiment))])
-const closestExp = computed(() => closest.value && experimentByName(closest.value.experiment))
 // --- rank NASA's investigations for the chosen place: our rule, explained in words (no AI)
 // what it studied (material flammability > detection, suppression > gas flames > models), whether it burned this
 // material, and how close its tested oxygen came to this place's air
@@ -132,20 +136,7 @@ const ranked = computed(() => store.experiments.map(e => {
   if (e.name === 'ACME BRE') why.push('its record reports burning in elevated oxygen without airflow')
   const score = role[1] + (sameMaterial ? 1 : 0) + (gap != null ? Math.max(0, 1 - gap / 20) : 0) + (e.name === 'ACME BRE' && place.value.oxygen_pct > 25 ? 1 : 0)
   return { e, pillar: role[0], score, why }
-}).sort((a, b) => b.score - a.score)
-  // a habitat needs all three: the best two that prevent, detect and suppress fires, best first
-  .filter((r, i, all) => all.filter(x => x.pillar === r.pillar).indexOf(r) < 2)
-  .slice(0, 6))
-
-// --- for modellers: the tests behind the current view, and a CSV of them
-const COLS = ['experiment', 'test', 'date', 'material', 'shape', 'size_mm', 'oxygen_pct', 'airflow_start_cm_s', 'airflow_min_cm_s', 'flow_direction', 'pressure_atm', 'pressure_assumed', 'result', 'material_text', 'source']
-function downloadCsv(rows, name) {
-  const cell = v => v == null ? '' : /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v)
-  const text = [COLS.join(','), ...rows.map(r => COLS.map(c => cell(r[c])).join(','))].join('\n')
-  const a = document.createElement('a')
-  a.href = URL.createObjectURL(new Blob([text], { type: 'text/csv' })); a.download = name; a.click()
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000)
-}
+}).sort((a, b) => b.score - a.score))   // best first; the tabs below show the top few of each kind
 
 const isNarrow = ref(false)
 const mq = typeof window !== 'undefined' ? window.matchMedia('(max-width: 700px)') : null
@@ -188,7 +179,7 @@ onBeforeUnmount(() => { clearInterval(tick); clearTimeout(idle); clearInterval(w
           <span>Reading <b>“{{ question }}”</b>, then looking up the closest materials NASA tested… <span class="muted">{{ waited }} s</span></span>
         </p>
         <p v-if="asked && reading && reading.object && !noMatch" class="asked-line">
-          NASA never burned a {{ reading.object }}. The closest material NASA tested is <b>{{ material }}</b>
+          NASA never burned a {{ reading.object }}. The closest material NASA tested is <b>{{ material }}</b>{{ " " }}
           <span class="muted">(a stand-in, not the object itself)</span>
           <br v-if="reading.made_of" /><span v-if="reading.made_of" class="muted small">Usually made of: {{ reading.made_of }}.</span>
         </p>
@@ -197,7 +188,7 @@ onBeforeUnmount(() => { clearInterval(tick); clearTimeout(idle); clearInterval(w
           Would your <span class="pick">{{ reading.object }}</span> burn in
           <span class="nowrap"><label class="inline-select"><span class="sr">Place</span>
             <select v-model="placeId">
-              <option v-for="p in store.places" :key="p.id" :value="p.id">{{ p.name }}</option>
+              <option v-for="p in store.places" :key="p.id" :value="p.id">{{ short(p.name) }}</option>
             </select>
           </label>?</span>
         </h1>
@@ -212,7 +203,7 @@ onBeforeUnmount(() => { clearInterval(tick); clearTimeout(idle); clearInterval(w
           burn in
           <span class="nowrap"><label class="inline-select"><span class="sr">Place</span>
             <select v-model="placeId">
-              <option v-for="p in store.places" :key="p.id" :value="p.id">{{ p.name }}</option>
+              <option v-for="p in store.places" :key="p.id" :value="p.id">{{ short(p.name) }}</option>
             </select>
           </label>?</span>
         </h1>
@@ -220,7 +211,7 @@ onBeforeUnmount(() => { clearInterval(tick); clearTimeout(idle); clearInterval(w
         <Transition name="swap" mode="out-in">
           <div class="verdict-block" :class="inside ? 'ok' : 'gap'" :key="placeId + material + noMatch" aria-live="polite">
             <template v-if="noMatch">
-              <p class="verdict">NASA's fire data can't answer this one.</p>
+              <p class="verdict">NASA's data can't answer this.</p>
               <p class="why">{{ reading?.answer }}</p>
             </template>
             <template v-else-if="!withOxygen.length">
@@ -229,19 +220,18 @@ onBeforeUnmount(() => { clearInterval(tick); clearTimeout(idle); clearInterval(w
             </template>
             <template v-else-if="inside">
               <p class="verdict">NASA tested this.</p>
-              <p class="why">{{ withOxygen.length }} fires with {{ material }} in air like the Space Station's. Tested is not the same as safe:
-                what happened in each is on its experiment page.</p>
+              <p class="why">{{ withOxygen.length }} real fires in air like this. Tested is not the same as safe.</p>
             </template>
             <template v-else>
               <p class="verdict">We don't know. No matching test.</p>
-              <p class="why">NASA tested {{ material }} only in different air: {{ region.min === region.max ? region.min : `${region.min}–${region.max}` }}% oxygen at 1 atm.
+              <p class="why">NASA burned it only in {{ region.min === region.max ? region.min : `${region.min}–${region.max}` }}% oxygen at 1 atm.
                 Not tested here does not mean safe.</p>
             </template>
           </div>
         </Transition>
 
         <Transition name="swap" mode="out-in">
-          <p v-if="!noMatch && !asked" class="material-line" :key="material">
+          <p v-if="stand && !noMatch && !asked" class="material-line" :key="material">
             <MaterialIcon :material="material" /><span><b>{{ material }}:</b> {{ what }} <span class="muted small">(illustration)</span></span>
           </p>
         </Transition>
@@ -258,7 +248,7 @@ onBeforeUnmount(() => { clearInterval(tick); clearTimeout(idle); clearInterval(w
 
       <!-- 2. the journey: where NASA tested, where nobody has -->
       <div class="journey-wrap">
-        <JourneyStrip :places="store.places" :place-id="placeId" :status="statusOf" :material="material" :tests="withOxygen"
+        <JourneyStrip :places="store.places" :place-id="placeId" :status="noMatch ? nothing : statusOf" :material="material" :tests="noMatch ? [] : withOxygen"
                       :closest="inside || noMatch ? null : closest" :two-stop="isNarrow" @pick="id => placeId = id" />
       </div>
 
@@ -268,13 +258,10 @@ onBeforeUnmount(() => { clearInterval(tick); clearTimeout(idle); clearInterval(w
                   :asked="asked && reading && reading.object ? reading.object : ''" />
       </div>
 
-      <!-- 4. source and progress -->
+      <button v-if="!stand" type="button" class="more-below" @click="toCloser">Look closer: the gap, the experiments, a real fire, back on Earth, the data</button>
+
+      <!-- 4. the tour controls (top right on a wide screen) -->
       <div class="stage-foot">
-        <p class="muted small">
-          <template v-if="sources.length">Experiments: {{ sources.join(', ') }}, NASA Physical Sciences Informatics.</template>
-          {{ place.name }} air is a NASA <template v-if="place.id === 'iss'">cabin value</template><template v-else>proposed design atmosphere</template>
-          (<a :href="place.source" target="_blank">source</a>). Illustrations not to scale.
-        </p>
         <div class="tour" :class="{ paused: !auto }">
           <button v-if="!stand && asked" class="tour-toggle" @click="backToTour">Back to the tour</button>
           <button v-else-if="!stand" class="tour-toggle" @click="toggle" :aria-label="auto ? 'Pause the tour' : 'Play the tour'">{{ auto ? 'Pause' : 'Play' }}</button>
@@ -288,59 +275,20 @@ onBeforeUnmount(() => { clearInterval(tick); clearTimeout(idle); clearInterval(w
       </div>
     </section>
 
-    <!-- below the first screen (laptop): the closest test, one click into the research -->
-    <section v-if="!stand && closest && !inside" class="closest-one">
-      <h2>The closest NASA got</h2>
-      <p><a :href="link(closest.experiment)">{{ closest.experiment }} {{ closest.test }}</a>: {{ closest.oxygen_pct }}% oxygen at 1 atm,
-        {{ closest.material_text }}. Compared with {{ place.name }}: {{ closest.gap }}.</p>
-      <p><a v-if="closestExp" :href="`#/experiment/${closestExp.id}`" class="cta">Explore this experiment</a>
-        <span class="muted small"> Its papers, the full oxygen and pressure chart, and every test are on the experiment page.</span></p>
-    </section>
-
-    <!-- ranked investigations for this place (our rule, with its reasons) -->
-    <section v-if="!stand" class="ranked">
-      <h2>Most relevant NASA investigations for {{ place.name }}</h2>
-      <p class="muted small">The best two for preventing, detecting and putting out fires. Ranked by what each studied,
-        whether it burned {{ material }}, and how close its tests came to {{ place.name }}'s air. Our rule, not NASA's.</p>
-      <ol>
-        <li v-for="r in ranked" :key="r.e.id">
-          <a :href="`#/experiment/${r.e.id}`"><b>{{ r.e.name || r.e.id }}</b></a>
-          <span class="pill" :class="r.pillar">{{ r.pillar }}</span>
-          <span class="muted"> {{ r.e.title }}</span><br />
-          <small>{{ r.why.join('; ') }}.</small>
-        </li>
-      </ol>
-    </section>
-
-    <!-- the data behind the view, for modellers -->
-    <section v-if="!stand" class="modellers">
-      <h2>For modellers: the {{ mine.length }} {{ material }} tests</h2>
-      <p class="muted small">One row per test from NASA's tables, cleaned into the same columns. Pressure is assumed 1 atm where NASA's
-        table does not record it (marked in the data).
-        <button class="link" @click="downloadCsv(mine, `nasa-${material.replace(/[^a-z0-9]+/gi, '-').replace(/-$/, '').toLowerCase()}-tests.csv`)">Download these as CSV</button>
-        or <a href="./data/material_tests.csv" download>all 263 material tests</a>.</p>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Experiment</th><th>Test</th><th>Shape</th><th>Size (mm)</th><th>Oxygen %</th><th>Airflow cm/s</th><th>Flow</th><th>Result in table</th></tr></thead>
-          <tbody>
-            <tr v-for="t in mine.slice(0, 40)" :key="t.experiment + t.test">
-              <td><a :href="link(t.experiment)">{{ t.experiment }}</a></td><td>{{ t.test }}</td><td>{{ t.shape || '–' }}</td>
-              <td>{{ t.size_mm ?? '–' }}</td><td>{{ t.oxygen_pct ?? '–' }}</td>
-              <td>{{ t.airflow_start_cm_s ?? '–' }}<template v-if="t.airflow_min_cm_s != null && t.airflow_min_cm_s !== t.airflow_start_cm_s"> → {{ t.airflow_min_cm_s }}</template></td>
-              <td>{{ t.flow_direction || '–' }}</td><td>{{ t.result || '–' }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <p v-if="mine.length > 40" class="muted small">Showing 40 of {{ mine.length }}; the CSV has them all.</p>
-      </div>
-    </section>
-
     <!-- after a question: background from the AI, kept apart from NASA's data -->
     <section v-if="!stand && asked && reading && reading.more" class="more-ai">
       <h2>More about your {{ reading.object }}</h2>
       <p>{{ reading.more }}</p>
       <p class="muted small">General background written by AI. It is not a NASA test result; the verdict above comes only from NASA's data.</p>
     </section>
+
+    <p v-if="!stand && noMatch" class="muted small leftover">The tabs below still show NASA's data for {{ material }}, the last material on screen.
+      They are not about your {{ reading?.object || 'object' }}.</p>
+
+    <!-- everything else, one tab at a time -->
+    <LookCloser v-if="!stand" :route="route" :material="material" :place="place" :mine="mine" :region="region" :inside="inside"
+                :closest="closest" :ranked="ranked" :sources="sources" :materials="materials"
+                @place="id => placeId = id" @material="m => material = m" @interact="holdTour" />
 
     <!-- the ask bar, docked at the bottom (not on the unattended stand) -->
     <form v-if="!stand" class="ask-bar" @submit.prevent="ask">

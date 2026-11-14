@@ -56,8 +56,8 @@ onBeforeUnmount(() => document.removeEventListener('visibilitychange', onVis))
 </script>
 
 <template>
-  <div class="cosmos" :class="{ paused: hidden }" aria-hidden="true">
-    <svg :viewBox="`0 0 ${W} ${H}`" preserveAspectRatio="xMidYMid slice">
+  <div class="cosmos" aria-hidden="true">
+    <svg :class="{ paused: hidden }" :viewBox="`0 0 ${W} ${H}`" preserveAspectRatio="xMidYMid slice">
       <defs>
         <!-- the void: almost black, with a trace of depth, not a colored wash -->
         <radialGradient id="void" cx="62%" cy="38%" r="85%">
@@ -90,9 +90,9 @@ onBeforeUnmount(() => document.removeEventListener('visibilitychange', onVis))
 
       <rect :width="W" :height="H" fill="url(#void)" />
 
-      <g class="drift">
+      <g>
         <!-- the Voyager light: one broad, faint, slightly tilted band, and an even fainter one -->
-        <g class="light" mask="url(#band-fade)">
+        <g mask="url(#band-fade)">
           <rect x="1180" y="-300" width="300" height="1700" fill="url(#band-across)" opacity="0.055"
                 transform="rotate(14 1330 540)" />
           <rect x="560" y="-300" width="180" height="1700" fill="url(#band-across)" opacity="0.025"
@@ -119,13 +119,13 @@ onBeforeUnmount(() => document.removeEventListener('visibilitychange', onVis))
 
 <style scoped>
 .cosmos { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; background: #05070B; }
-.cosmos svg { width: 100%; height: 100%; display: block; }
-/* almost still: the whole sky drifts a few pixels over a minute, and the light breathes very slightly */
-.drift { animation: drift 56s ease-in-out infinite alternate; }
-.light { animation: breathe 48s ease-in-out infinite alternate; }
-.paused .drift, .paused .light { animation-play-state: paused; }
+/* almost still: the whole sky drifts a few pixels over a minute. The drift moves the <svg> element itself,
+   so the browser moves one ready-made GPU layer; animating groups inside the SVG made it re-render the full-screen
+   sky (gradients, mask, 150 stars) on every frame. The svg is 12px larger than the screen so no edge ever shows. */
+.cosmos svg { position: absolute; inset: -12px; width: calc(100% + 24px); height: calc(100% + 24px);
+  will-change: transform; animation: drift 56s ease-in-out infinite alternate; }
+.cosmos svg.paused { animation-play-state: paused; }
 @keyframes drift { from { transform: translate(0, 0) } to { transform: translate(-6px, 3px) } }
-@keyframes breathe { from { opacity: 0.85 } to { opacity: 1 } }
 @media (max-width: 700px) { circle:not(.phone) { display: none; } }
-@media (prefers-reduced-motion: reduce) { .drift, .light { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .cosmos svg { animation: none; } }
 </style>
