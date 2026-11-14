@@ -232,3 +232,50 @@ body::after {
 }
 .top, footer { background: transparent; }
 .pbd-note { display: block; margin-top: 6px; }
+
+/* the two number lines under the picture */
+.airlines-section { margin: 8px 0 28px; }
+.airlines-section h2 { font-size: 18px; margin: 0 0 6px; }
+.airlines { width: 100%; height: auto; display: block; }
+.airlines .row-label { fill: var(--hull); font-size: 15px; font-weight: 600; }
+.airlines .axis { stroke: var(--rule); stroke-width: 2; }
+.airlines .tick { fill: var(--regolith); font-size: 12px; }
+.airlines .note { fill: var(--regolith); font-size: 12px; } .airlines .note.warn { fill: var(--ember); }
+.airlines .earth-line { stroke: var(--regolith); stroke-dasharray: 2 3; }
+.airlines .warn-line { stroke: var(--ember); stroke-dasharray: 5 4; }
+.airlines .gap { fill: rgba(242, 166, 90, .14); stroke: var(--ember); stroke-dasharray: 4 3; rx: 4; }
+.airlines .gap-text { fill: var(--ember); font-size: 12px; font-weight: 600; }
+.airlines .fire { fill: var(--flame); opacity: .85; transition: cx .6s ease, cy .6s ease; animation: fade-in .5s ease both; }
+.airlines .fire-group { fill: var(--flame); opacity: .85; }
+.airlines .marker { transition: transform .6s cubic-bezier(.3,.7,.3,1); }
+.airlines .marker path { fill: var(--hull); stroke: var(--orbit); stroke-width: 2; }
+.airlines .marker text { fill: var(--hull); font-size: 13px; font-weight: 700; }
+@keyframes fade-in { from { opacity: 0 } to { opacity: .85 } }
+
+/* the question box */
+.ask { display: flex; gap: 10px; margin: 8px 0 4px; max-width: 860px; }
+.ask input { flex: 1; min-width: 0; font: inherit; color: var(--hull); background: var(--orbit-2); border: 1px solid var(--rule);
+  border-radius: 999px; padding: 12px 18px; transition: border-color .15s; }
+.ask input::placeholder { color: var(--regolith); }
+.ask input:focus-visible { outline: none; border-color: var(--flame); }
+.reading { margin: 4px 0 0; color: var(--hull); } .reading.error { color: var(--ember); }
+@media (max-width: 600px) { .ask { flex-direction: column; } }
+.burn-q .asked { color: var(--flame); font-variation-settings: 'wdth' 100; }
+
+/* the closest materials NASA tested, for an object they never tested */
+.standins { margin: 8px 0 4px; }
+.standins p { margin: 0 0 8px; }
+.standin { display: inline-flex; align-items: center; gap: 10px; margin: 0 10px 8px 0; padding: 6px 14px 6px 6px; text-align: left;
+  background: var(--orbit-2); color: var(--hull); border: 1px solid var(--rule); border-radius: 12px; font: inherit; cursor: pointer;
+  transition: border-color .15s; }
+.standin:hover { border-color: var(--regolith); } .standin.on { border-color: var(--flame); }
+.standin .material-icon { width: 40px; height: 40px; }
+.standin small { color: var(--regolith); }
+.research { margin-top: 36px; }
+
+/* arrows on the chart after a question */
+.airlines .callout { transition: transform .6s cubic-bezier(.3,.7,.3,1); }
+.airlines .callout text { font-size: 13px; font-weight: 700; }
+.airlines .callout path { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.airlines .callout.you text { fill: var(--hull); } .airlines .callout.you path { stroke: var(--hull); }
+.airlines .callout.nasa text { fill: var(--flame); } .airlines .callout.nasa path { stroke: var(--flame); }

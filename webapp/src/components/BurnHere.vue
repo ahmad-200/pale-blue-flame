@@ -1,9 +1,10 @@
 <script setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { store, experimentByName } from '../data.js'
 import GapMap from './GapMap.vue'
 import JourneyStrip from './JourneyStrip.vue'
 import MaterialIcon from './MaterialIcon.vue'
+import AirLines from './AirLines.vue'
 
 const placeId = ref('moon')
 const material = ref('SIBAL (cotton-fiberglass)')
@@ -69,26 +70,97 @@ const SLIDES = [
   ['silicone', 'iss'], ['silicone', 'moon'],
 ]
 const STEP_MS = 3000, IDLE_MS = 20000
-const slide = ref(0), auto = ref(true)
+const slide = ref(0), auto = ref(true), asked = ref(false)
 let tick = null, idle = null
 function show(i) {
+  noMatch.value = false
   slide.value = (i + SLIDES.length) % SLIDES.length
   ;[material.value, placeId.value] = SLIDES[slide.value]
 }
 function start() { clearInterval(tick); auto.value = true; tick = setInterval(() => show(slide.value + 1), STEP_MS) }
 function stop() { clearInterval(tick); auto.value = false }
 // someone touched it: pause, and come back to the tour after a quiet spell
-function touched() { stop(); clearTimeout(idle); idle = setTimeout(start, IDLE_MS) }
+function touched() { stop(); clearTimeout(idle); if (!asked.value) idle = setTimeout(start, IDLE_MS) }   // after a question: wait for Play
 // a change that does not match the current slide came from a person (Vue runs this after the change, so compare, don't flag)
-watch([material, placeId], ([m, p]) => { const [sm, sp] = SLIDES[slide.value]; if (m !== sm || p !== sp) touched() })
+let fromAsk = null   // the material and place the question box just set: not a person's click
+watch([material, placeId], ([m, p]) => {
+  if (fromAsk && m === fromAsk[0] && p === fromAsk[1]) return
+  const [sm, sp] = SLIDES[slide.value]
+  if (m !== sm || p !== sp) { noMatch.value = false; touched() }
+})
 function pick(i) { show(i); touched() }
-function toggle() { clearTimeout(idle); auto.value ? stop() : start() }
+function toggle() { clearTimeout(idle); if (auto.value) stop(); else { asked.value = false; reading.value = null; start() } }
 onMounted(() => { show(0); start() })
+
+// --- the question box: an AI reads the visitor's words and picks one of OUR materials and places.
+// The answer itself still comes from NASA's data. The key lives on the server (/api/ask), never here.
+const ASK_URL = import.meta.env.VITE_ASK_URL || '/api/ask'
+const question = ref(''), asking = ref(false), reading = ref(null)
+const noMatch = ref(false)   // the AI found no material we have: say so, never show a leftover one
+
+// the research behind a material: papers of the experiments that burned it, straight from NASA's record
+const KEYWORDS = { 'SIBAL (cotton-fiberglass)': ['sibal', 'cotton', 'fabric', 'textile'], 'PMMA (acrylic)': ['pmma', 'acrylic'],
+  'PMMA (assumed)': ['pmma', 'sphere'], 'Nomex': ['nomex'], 'silicone': ['silicone'], 'candle wax': ['candle', 'wax'],
+  'Ultem': ['ultem'], 'PMMA + Nomex': ['pmma', 'nomex'] }
+const research = computed(() => {
+  const names = [...new Set(mine.value.map(t => t.experiment))]
+  const words = KEYWORDS[material.value] || []
+  const papers = []
+  for (const n of names) {
+    const e = experimentByName(n); if (!e) continue
+    for (const p of e.papers) papers.push({ ...p, exp: n, id: e.id, hit: words.some(w => p.title.toLowerCase().includes(w)) })
+  }
+  papers.sort((a, b) => b.hit - a.hit)
+  return { experiments: names, papers: papers.slice(0, 5), total: papers.length }
+})
+async function ask() {
+  if (!question.value.trim() || asking.value) return
+  asking.value = true; reading.value = null; touched()
+  try {
+    const r = await fetch(ASK_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ question: question.value }) })
+    const out = await r.json()
+    if (out.error) { reading.value = { error: out.error }; return }
+    if (out.place) placeId.value = out.place
+    if (out.material) material.value = out.material
+    fromAsk = [material.value, placeId.value]
+    noMatch.value = !out.material
+    reading.value = out
+  } catch {
+    reading.value = { error: 'The question box needs an internet connection. The examples below still work.' }
+  } finally {
+    asking.value = false; stop(); clearTimeout(idle)
+    if (reading.value && !reading.value.error) {
+      asked.value = true
+      await nextTick(); document.querySelector('.airlines-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }
+}
 onBeforeUnmount(() => { clearInterval(tick); clearTimeout(idle) })
 </script>
 
 <template>
-  <h1 class="burn-q">
+  <form class="ask" @submit.prevent="ask">
+    <label class="sr" for="ask-input">Ask in your own words</label>
+    <input id="ask-input" v-model="question" maxlength="300" autocomplete="off"
+           placeholder="Ask in your own words, e.g. would a cotton shirt burn in a lunar habitat?" />
+    <button class="cta" :disabled="asking || !question.trim()">{{ asking ? 'Reading…' : 'Ask' }}</button>
+  </form>
+  <p v-if="reading" class="reading" :class="{ error: reading.error }" aria-live="polite">
+    <template v-if="reading.error">{{ reading.error }}</template>
+    <template v-else>{{ reading.answer }} <span class="muted small">(read by AI; the answer below comes from NASA's data)</span></template>
+  </p>
+  <div v-if="reading && reading.candidates && reading.candidates.length" class="standins">
+    <p class="small muted">NASA never burned a {{ reading.object || 'thing like that' }}<template v-if="reading.made_of"> (usually {{ reading.made_of }})</template>.
+      The closest materials NASA did test:</p>
+    <button v-for="c in reading.candidates" :key="c.material" class="standin" :class="{ on: c.material === material }"
+            @click="material = c.material; fromAsk = [c.material, placeId]; touched()">
+      <MaterialIcon :material="c.material" /><span><b>{{ c.material }}</b><br /><small>{{ c.why }}</small></span>
+    </button>
+  </div>
+
+  <h1 v-if="noMatch" class="burn-q">Would <span class="asked">“{{ question }}”</span> burn?</h1>
+  <h1 v-else class="burn-q">
     Would
     <label class="inline-select"><span class="sr">Material</span>
       <select v-model="material">
@@ -103,7 +175,7 @@ onBeforeUnmount(() => { clearInterval(tick); clearTimeout(idle) })
     </label>?</span>
   </h1>
   <Transition name="swap" mode="out-in">
-    <div class="material-line" :key="material">
+    <div v-if="!noMatch" class="material-line" :key="material">
       <MaterialIcon :material="material" />
       <p><b>{{ material }}</b><br />{{ what }} <span class="muted small">(illustration)</span></p>
     </div>
@@ -126,11 +198,26 @@ onBeforeUnmount(() => { clearInterval(tick); clearTimeout(idle) })
       Tap a place to choose it.</p>
   </section>
 
+  <section class="airlines-section">
+    <h2 v-if="asked && reading && reading.object">Your {{ reading.object }} in {{ place.name }}: closest NASA material is {{ material }}</h2>
+    <h2 v-else>Why: {{ place.name }} compared with every {{ material }} fire NASA lit</h2>
+    <AirLines :tests="withOxygen" :place="place" :material="material" :warning="31.4"
+              :asked="asked && reading && reading.object ? reading.object : ''" />
+    <p class="muted small">Blue dots: NASA's fires. Diamond: {{ place.name }}. Amber: air nobody has tested a fire in.</p>
+  </section>
+
   <div class="answer-row">
   <section class="answer" :class="inside ? 'ok' : 'gap'" aria-live="polite">
     <Transition name="swap" mode="out-in">
-      <div :key="placeId + material">
-        <template v-if="!withOxygen.length">
+      <div :key="placeId + material + noMatch">
+        <template v-if="noMatch">
+          <p class="verdict">NASA's fire tests can't answer this one.</p>
+          <p>{{ reading?.answer }}</p>
+          <p v-if="place.pressure_atm < 0.9">What we can say: no material at all has been burned in
+            {{ place.name }} air ({{ place.oxygen_pct }}% oxygen, {{ place.pressure_atm }} atm) in NASA's database.</p>
+          <p class="muted">Try a material we have: cotton fabric, acrylic, Nomex, silicone or candle wax.</p>
+        </template>
+        <template v-else-if="!withOxygen.length">
           <p class="verdict">We can't place these fires yet.</p>
           <p>NASA burned {{ mine.length }} samples of <b>{{ material }}</b>, but never wrote down the oxygen in those tests.
              So we can't put them on the map yet, which is a bit frustrating.</p>
@@ -168,6 +255,18 @@ onBeforeUnmount(() => { clearInterval(tick); clearTimeout(idle) })
     <p class="muted small">Distances, not danger scores.</p>
   </section>
   </div>
+
+  <section v-if="research.papers.length" class="research">
+    <h2>Read the research</h2>
+    <p class="muted small">Papers NASA lists for the experiments that burned {{ material }}
+      ({{ research.experiments.join(', ') }}): {{ research.total }} in all. The most relevant first.</p>
+    <ul class="papers">
+      <li v-for="p in research.papers" :key="p.title">
+        <a v-if="p.doi" :href="`https://doi.org/${p.doi}`" target="_blank">{{ p.title }}</a><span v-else>{{ p.title }}</span>
+        <small class="muted"> {{ p.authors }}. From <a :href="`#/experiment/${p.id}`">{{ p.exp }}</a>.</small>
+      </li>
+    </ul>
+  </section>
 
   <div class="facts">
     <section>

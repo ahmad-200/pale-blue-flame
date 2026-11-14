@@ -13,3 +13,16 @@ Screens: Home (prevent / detect / suppress), **Will it burn here?** (place + mat
 and one card per experiment (`#/experiment/PSI-25`).
 
 Not done yet: "what they found" summaries per experiment; oxygen and airflow for BASS (its table has none).
+
+## The question box (AI)
+
+Visitors type a question ("would my nike shoe burn on the Moon?"). The backend in `../backend` (FastAPI + LangGraph,
+DeepSeek) picks the closest materials NASA tested and the place, looks the answer up in `../data`, and words it in
+two or three sentences using only those facts. The API key lives in the backend only.
+
+```sh
+../backend/run.sh   # backend on :8787 (reads DEEPSEEK_API_KEY)
+npm run dev         # site on :5173, /api is passed to the backend
+```
+
+Without the backend or internet, the box says so and the carousel keeps working.
