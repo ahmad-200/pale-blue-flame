@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { store, experimentByName } from '../data.js'
 import GapMap from './GapMap.vue'
+import JourneyStrip from './JourneyStrip.vue'
 
 const placeId = ref('moon')
 const material = ref('SIBAL (cotton-fiberglass)')
@@ -21,8 +22,13 @@ const region = computed(() => {
   const o = withOxygen.value.map(t => t.oxygen_pct)
   return { min: Math.min(...o), max: Math.max(...o) }
 })
-const inside = computed(() => region.value && Math.abs(place.value.pressure_atm - 1) <= 0.1
-  && place.value.oxygen_pct >= region.value.min - 1 && place.value.oxygen_pct <= region.value.max + 1)
+// is a place's air inside the air this material was tested in? (pressure about 1 atm, oxygen within the tested range)
+const statusOf = p => {
+  const tested = !!region.value && Math.abs(p.pressure_atm - 1) <= 0.1
+    && p.oxygen_pct >= region.value.min - 1 && p.oxygen_pct <= region.value.max + 1
+  return { tested, count: tested ? withOxygen.value.length : 0 }
+}
+const inside = computed(() => statusOf(place.value).tested)
 
 // nearest = smallest gap in oxygen (10 points) and pressure (0.5 atm) weighted alike; shown as plain differences
 const fmt = (v, unit, digits) => `${v > 0 ? '+' : v < 0 ? '−' : '±'}${Math.abs(v).toFixed(digits)} ${unit}`
@@ -39,6 +45,13 @@ const link = name => `#/experiment/${experimentByName(name)?.id}`
   <h1>Will it burn here?</h1>
   <p class="intro">Pick a place where people live in space, and something that could catch fire there.
     We will show you every fire NASA has lit with it, and whether any of them happened in that kind of air.</p>
+  <section class="panel journey-panel">
+    <h3>Where has anyone lit this fire?</h3>
+    <JourneyStrip :places="store.places" :place-id="placeId" :status="statusOf" :material="material" @pick="id => placeId = id" />
+    <p class="muted small">Every green dot is a real fire NASA lit with {{ material }}. A dashed flame means nobody has lit it there yet.
+      Tap a place to choose it.</p>
+  </section>
+
   <div class="burn">
     <aside class="panel">
       <h3>Your choice</h3>
@@ -58,13 +71,13 @@ const link = name => `#/experiment/${experimentByName(name)?.id}`
         Nomex is the flame-resistant fabric in firefighter suits.</p>
     </aside>
 
-    <section class="panel map">
-      <h3>Where NASA has lit fires</h3>
+    <details class="panel map">
+      <summary>Show the detailed chart (oxygen and air pressure)</summary>
       <GapMap :tests="store.tests" :material="material" :places="store.places" :place="place" :region="region" />
       <p class="muted small">Each dot is one fire NASA lit (yours are green). The diamonds are places people live.
         Higher up means more oxygen; further left means thinner air. The empty space is what nobody has tested yet.
         (We assume the tests ran at normal cabin pressure, because NASA's tables don't say.)</p>
-    </section>
+    </details>
   </div>
 
   <div class="burn-bottom">

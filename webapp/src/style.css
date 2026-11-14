@@ -55,3 +55,22 @@ select { width: 100%; margin-top: 6px; padding: 8px; background: var(--bg); colo
 .papers li { margin-bottom: 8px; }
 .actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .intro { font-size: 17px; line-height: 1.6; max-width: 760px; color: var(--muted); margin-top: 0; }
+
+.journey-panel { margin-bottom: 16px; }
+.journey { width: 100%; height: auto; display: block; }
+.journey .earth { fill: #1d4f8f; } .journey .land { stroke: #3f8f5a; stroke-width: 10; fill: none; stroke-linecap: round; }
+.journey .moon { fill: #3a3f4d; } .journey .crater { fill: #2c303b; }
+.journey .route { fill: none; stroke: #4a5677; stroke-width: 2; stroke-dasharray: 3 7; }
+.journey .label { fill: var(--text); font-size: 15px; font-weight: 600; } .journey .small { fill: var(--muted); font-size: 12px; }
+.journey .small.yes { fill: var(--green); } .journey .small.no { fill: var(--red); }
+.journey .stop { cursor: pointer; } .journey .halo { fill: transparent; stroke: transparent; stroke-width: 2; }
+.journey .stop.on .halo { stroke: var(--blue); fill: rgba(127, 178, 255, .08); }
+.journey .stop:hover .halo { stroke: var(--line); }
+.journey .body { fill: #c9cfdd; } .journey .panel-wing { fill: #5d7fb8; } .journey .wheel { fill: #8e98b3; }
+.journey .flame { fill: #ff9a3c; stroke: #ffd27a; stroke-width: 1.5; }
+.journey .flame.unknown { fill: none; stroke: var(--red); stroke-dasharray: 4 3; stroke-width: 2; }
+.journey .q { fill: var(--red); font-size: 18px; font-weight: 700; }
+.journey .fire-dot { fill: var(--green); opacity: .8; }
+details.map summary { cursor: pointer; color: var(--muted); font-size: 14px; text-transform: uppercase; letter-spacing: .06em; }
+details.map[open] summary { margin-bottom: 12px; }
+details.map { align-self: start; }
