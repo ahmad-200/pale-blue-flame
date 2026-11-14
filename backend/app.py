@@ -28,6 +28,40 @@ MATERIALS = {
     "Ultem": "tough amber engineering plastic",
 }
 
+# --- what the AI knows about the data: one card per material, built from our files at startup
+def material_card(name: str) -> dict:
+    rows = [t for t in TESTS if t["material"] == name]
+    o2 = sorted(float(t["oxygen_pct"]) for t in rows if t["oxygen_pct"])
+    shapes = {}
+    for t in rows:
+        if t["shape"]:
+            shapes[t["shape"]] = shapes.get(t["shape"], 0) + 1
+    exps = sorted({t["experiment"] for t in rows})
+    return {
+        "what": MATERIALS[name],
+        "fires": len(rows),
+        "fires_with_oxygen_recorded": len(o2),
+        "oxygen_range_tested": [o2[0], o2[-1]] if o2 else None,
+        "pressure_tested": "about 1 atm (Space Station or cargo-ship cabin air)",
+        "forms_burned": shapes,
+        "examples_from_nasa_tables": sorted({t["material_text"] for t in rows})[:4],
+        "experiments": {e: EXPERIMENTS[e]["title"] for e in exps if e in EXPERIMENTS},
+    }
+
+
+CARDS = {m: material_card(m) for m in MATERIALS}
+
+# --- the AI only says what the object is made of, in these kinds; this table (our code) picks NASA's material
+KINDS = {
+    "hard_plastic": "PMMA (acrylic)",          # cases, shells, keys, housings, bottles, windows
+    "engineering_plastic": "Ultem",            # tough heat-resistant plastic parts, connectors
+    "rubber_or_foam": "silicone",              # soles, seals, gaskets, cable insulation, foam, thermal pads
+    "cloth": "SIBAL (cotton-fiberglass)",      # cotton, clothes, towels, canvas, paper-like sheets, leather-like sheets
+    "flame_resistant_fabric": "Nomex",         # firefighter, flight and space suits, aramid
+    "wax": "candle wax",
+    "metal": None, "glass_or_ceramic": None, "circuit_board": None, "liquid": None, "food": None, "other": None,
+}
+
 llm = ChatOpenAI(model="deepseek-chat", base_url="https://api.deepseek.com", temperature=0,
                  api_key=os.environ.get("DEEPSEEK_API_KEY", "missing"))
 
@@ -40,6 +74,7 @@ class State(TypedDict, total=False):
     place: str
     facts: dict
     answer: str
+    more: str
     error: str
 
 
@@ -49,22 +84,36 @@ def ask_json(system: str, user: str) -> dict:
 
 
 def interpret(s: State) -> State:
-    """LLM: the object, what it is made of, the closest materials NASA tested, and the place."""
+    """LLM: what the object is made of (parts, kinds, shares) and the place. Our table picks the NASA materials."""
     try:
         out = ask_json(
-            "Map a question about fire in space onto lists. JSON only: "
-            '{"object": str, "made_of": str, "candidates": [{"material": key, "why": str}], "place": key or null}. '
-            "candidates: 1-3 closest materials from MATERIALS by what the object is made of, closest first; "
-            "empty only for metals, liquids, gases, food. Never invent keys. Mars habitat -> moon.\n"
-            f"MATERIALS: {json.dumps(MATERIALS)}\nPLACES: {json.dumps({k: v['name'] for k, v in PLACES.items()})}",
+            "You help a fire-safety app built on NASA's microgravity fire tests. The app only knows the materials below "
+            "(cards built from NASA's tables) and four places. Your job is ONLY to describe what the visitor's object is "
+            "made of. JSON only:\n"
+            '{"object": short name, "parts": [{"part": str, "kind": one of KINDS, "share": 0-100}], "place": key or null}\n'
+            "parts: the 1-4 main parts of the object, with share = rough percent of its outside surface (what would "
+            "burn first). Shares add up to about 100. kind must be one of: " + ", ".join(KINDS) + ". "
+            "If the visitor names one of the materials below directly, use the matching kind. Mars habitat -> moon; "
+            "any spacecraft cabin or 'in space' -> iss.\n"
+            f"MATERIAL CARDS: {json.dumps(CARDS)}\nPLACES: {json.dumps({k: v['name'] for k, v in PLACES.items()})}",
             s["question"])
     except Exception as e:  # a provider outage degrades, it does not crash
         return {"error": f"The AI could not read the question ({type(e).__name__})."}
-    cands = [c for c in out.get("candidates", []) if c.get("material") in MATERIALS][:3]
+    parts = [p for p in out.get("parts", []) if isinstance(p, dict) and p.get("kind") in KINDS]
+    # add up the parts that map to the same NASA material, then rank by how much of the object it covers
+    total, names = {}, {}
+    for p in parts:
+        m = KINDS[p["kind"]]
+        if m:
+            total[m] = total.get(m, 0) + float(p.get("share") or 0)
+            names.setdefault(m, []).append(str(p.get("part", p["kind"])))
+    cands = [{"material": m, "why": f"{' and '.join(names[m])} (about {int(total[m])}%)"}
+             for m in sorted(total, key=lambda m: -total[m])]
     plottable = {t["material"] for t in TESTS if t["oxygen_pct"]}
-    cands.sort(key=lambda c: c["material"] not in plottable)   # stable: keeps the AI's order among plottable ones
-    return {"object": str(out.get("object", ""))[:60], "made_of": str(out.get("made_of", ""))[:120],
-            "candidates": cands, "place": out.get("place") if out.get("place") in PLACES else None}
+    cands.sort(key=lambda c: c["material"] not in plottable)   # stable: keeps size order among plottable ones
+    made_of = ", ".join(f"{p.get('part')} ({p['kind'].replace('_', ' ')})" for p in parts)
+    return {"object": str(out.get("object", ""))[:60], "made_of": made_of[:160], "candidates": cands[:3],
+            "place": out.get("place") if out.get("place") in PLACES else None}
 
 
 def lookup(s: State) -> State:
@@ -96,11 +145,15 @@ def explain(s: State) -> State:
                 else "Pick a place too: the Space Station, the airlock, a Moon base or a rover."}
     try:
         out = ask_json(
-            'Answer in JSON {"answer": str}: two or three plain sentences for a non-expert. Use ONLY the facts given; '
-            "no other numbers. Say the material is a stand-in for the object. If tested_in_this_air is false, say nobody "
-            "has tested it in this air and that not tested is not the same as safe.",
-            json.dumps({"object": s.get("object"), "made_of": s.get("made_of"), "facts": s["facts"]}))
-        return {"answer": str(out.get("answer", ""))[:600]}
+            'Answer in JSON {"answer": str, "more": str}. answer: two or three plain sentences for a non-expert. Use ONLY '
+            "the facts and the material card; no other numbers. Say the material is a stand-in for the object. If "
+            "tested_in_this_air is false, say there is no matching test in this air in the NASA data used, and that not "
+            "tested is not the same as safe. more: two to four sentences of general background a curious visitor would "
+            "value (why these parts matter in a cabin fire, how flames behave without gravity, why more oxygen matters). "
+            "It is general knowledge, not NASA test results: no invented test results or numbers, no safety advice.",
+            json.dumps({"object": s.get("object"), "made_of": s.get("made_of"), "facts": s["facts"],
+                        "material_card": CARDS.get(s["facts"].get("material"))}))
+        return {"answer": str(out.get("answer", ""))[:600], "more": str(out.get("more", ""))[:800]}
     except Exception:
         return {"answer": ""}
 
@@ -139,4 +192,4 @@ def ask(body: Ask):
     c = s.get("candidates") or []
     return {"error": s.get("error"), "object": s.get("object"), "made_of": s.get("made_of"), "candidates": c,
             "material": c[0]["material"] if c else None, "place": s.get("place"),
-            "answer": s.get("answer"), "facts": s.get("facts")}
+            "answer": s.get("answer"), "more": s.get("more"), "facts": s.get("facts")}

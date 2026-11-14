@@ -201,35 +201,8 @@ details.map[open] summary { margin-bottom: 12px; }
 .material-line p { margin: 0; max-width: 60ch; }
 .material-icon { width: 64px; height: 64px; flex: none; }
 
-/* Background: a nod to Voyager 1's Pale Blue Dot (1990). Faint sunbeams across deep space,
-   a sparse starfield, and one tiny pale blue dot inside a beam. Fixed behind everything, quiet enough to read over. */
-body { background: transparent; }   /* the page colour lives on :root, so the layers below can show */
-body::before {
-  content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none;
-  background:
-    /* the sunbeams: soft diagonal bands, warm like scattered sunlight in the photo */
-    linear-gradient(112deg, transparent 0 30%, rgba(140, 190, 255, .03) 33%, rgba(160, 205, 255, .055) 35.5%, rgba(140, 190, 255, .03) 38%, transparent 41%),
-    linear-gradient(112deg, transparent 0 52%, rgba(120, 170, 255, .022) 55%, rgba(140, 190, 255, .04) 57%, rgba(120, 170, 255, .022) 59%, transparent 62%),
-    linear-gradient(112deg, transparent 0 68%, rgba(159, 211, 255, .02) 70%, rgba(159, 211, 255, .035) 71.5%, rgba(159, 211, 255, .02) 73%, transparent 75%),
-    /* a sparse starfield: three offset layers of tiny points */
-    radial-gradient(1px 1px at 12% 18%, rgba(232, 237, 244, .55), transparent 60%),
-    radial-gradient(1px 1px at 78% 9%, rgba(232, 237, 244, .45), transparent 60%),
-    radial-gradient(1.2px 1.2px at 44% 72%, rgba(232, 237, 244, .5), transparent 60%),
-    radial-gradient(1px 1px at 91% 64%, rgba(232, 237, 244, .35), transparent 60%),
-    radial-gradient(1px 1px at 27% 88%, rgba(232, 237, 244, .4), transparent 60%),
-    radial-gradient(1px 1px at 63% 33%, rgba(232, 237, 244, .3), transparent 60%),
-    radial-gradient(60% 45% at 18% -5%, rgba(60, 120, 255, .16), transparent 70%),
-    radial-gradient(45% 40% at 88% 22%, rgba(159, 211, 255, .08), transparent 70%),
-    radial-gradient(70% 45% at 50% 108%, rgba(40, 95, 210, .13), transparent 70%),
-    var(--orbit);
-  background-size: 100% 100%, 100% 100%, 100% 100%, 320px 320px, 410px 410px, 530px 530px, 290px 290px, 470px 470px, 380px 380px, 100% 100%, 100% 100%, 100% 100%;
-}
-/* the pale blue dot itself, in the middle beam */
-body::after {
-  content: ""; position: fixed; z-index: -1; pointer-events: none;
-  left: 82.5%; top: 15%; width: 4px; height: 4px; border-radius: 50%;   /* in the right-hand beam, clear of the content column */
-  background: #BFE3FF; box-shadow: 0 0 6px 1px rgba(159, 211, 255, .55);
-}
+/* The sky lives in components/CosmicBackdrop.vue (stars, Voyager light, distant Earth). */
+
 .top, footer { background: transparent; }
 .pbd-note { display: block; margin-top: 6px; }
 
@@ -279,3 +252,87 @@ body::after {
 .airlines .callout path { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .airlines .callout.you text { fill: var(--hull); } .airlines .callout.you path { stroke: var(--hull); }
 .airlines .callout.nasa text { fill: var(--flame); } .airlines .callout.nasa path { stroke: var(--flame); }
+
+/* ===== the one-screen stage (redesign): question + verdict, journey, evidence, source ===== */
+.burn .stage { display: grid; grid-template-rows: auto 1fr auto auto; gap: 12px; min-height: calc(100dvh - 140px); }
+.burn .qv .burn-q { font-size: clamp(26px, 3.4vw, 46px); margin: 0 0 6px; max-width: none; line-height: 1.2; }
+.burn .qv .pick { color: var(--flame); }
+.burn .verdict-block { margin: 4px 0 8px; }
+.burn .verdict-block .verdict { font-variation-settings: var(--wide); font-weight: 800; font-size: clamp(30px, 4.4vw, 64px);
+  line-height: 1.05; margin: 0 0 8px; }
+.burn .verdict-block.gap .verdict { color: var(--ember); }
+.burn .verdict-block.ok .verdict { color: var(--flame); }
+.burn .verdict-block .why { margin: 0; font-size: 18px; max-width: 70ch; }
+.burn .material-line { display: flex; align-items: center; gap: 12px; margin: 6px 0 0; color: var(--regolith); }
+.burn .material-line .material-icon { width: 36px; height: 36px; }
+.burn .asked-line { margin: 0 0 6px; font-size: 16px; }
+.burn .standins { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 10px; }
+.burn .journey-wrap { min-height: 0; display: flex; align-items: center; }
+.burn .journey-wrap .journey { max-height: 100%; }
+.burn .evidence .airlines { max-height: 26vh; }
+.burn .stage-foot { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
+  border-top: 1px solid var(--rule); padding-top: 10px; }
+.burn .stage-foot p { margin: 0; max-width: 80ch; }
+.burn .tour { margin: 0; }
+.airlines .pressure-pair { fill: var(--hull); font-size: 15px; }
+.airlines .pressure-pair .sep { fill: var(--rule); }
+.airlines .pressure-pair .off { fill: var(--ember); font-weight: 700; }
+.closest-one { margin: 40px 0 120px; }
+
+/* the ask bar, docked at the bottom of the laptop view */
+.ask-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; display: flex; gap: 10px; align-items: center;
+  padding: 12px max(16px, calc((100vw - 1080px) / 2 + 28px)); background: rgba(5, 7, 11, .88);
+  backdrop-filter: blur(8px); border-top: 1px solid var(--rule); }
+.ask-bar input { flex: 1; min-width: 0; font: inherit; color: var(--hull); background: var(--orbit-2); border: 1px solid var(--rule);
+  border-radius: 999px; padding: 11px 18px; }
+.ask-bar input:focus-visible { outline: none; border-color: var(--flame); }
+.ask-bar .ask-note { white-space: nowrap; }
+@media (max-width: 760px) { .ask-bar .ask-note { display: none; } }
+main { padding-bottom: 96px; }
+
+/* ===== stand mode (?stand=1): one 16:9 screen, nothing to scroll, type read from 1.5-2 m ===== */
+.stand-mode, .stand-mode body { height: 100dvh; overflow: hidden; }
+.stand-mode main { max-width: none; padding: 36px 64px; height: 100dvh; }
+.stand-mode .burn .stage { height: calc(100dvh - 72px); min-height: 0; gap: 18px; }
+.stand-mode .burn .qv .burn-q { font-size: clamp(36px, 2.9vw, 58px); }
+.stand-mode .burn .verdict-block .verdict { font-size: clamp(48px, 4.4vw, 88px); }
+.stand-mode .burn .verdict-block .why { font-size: clamp(20px, 1.6vw, 32px); }
+.stand-mode .burn .material-line { font-size: clamp(16px, 1.15vw, 22px); }
+.stand-mode .burn .stage-foot { font-size: clamp(14px, 1.05vw, 22px); }
+.stand-mode .burn .stage-foot .small { font-size: inherit; }
+.stand-mode .airlines .row-label, .stand-mode .airlines .pressure-pair { font-size: 18px; }
+.stand-mode .burn .evidence .airlines { max-height: 22vh; }
+
+/* phones: everything stacks; the journey shows two stops */
+@media (max-width: 700px) {
+  .burn .stage { min-height: 0; }
+  .burn .stage-foot { flex-direction: column; align-items: flex-start; }
+}
+
+/* the journey is the hero: give it the space, keep the evidence compact */
+.burn .evidence { display: flex; justify-content: center; }
+.burn .evidence .airlines { max-height: 17vh; width: auto; max-width: 100%; }
+.stand-mode .burn .evidence .airlines { max-height: 17vh; }
+.burn .journey-wrap { justify-content: center; }
+.burn .journey-wrap .journey { width: 100%; height: 100%; }
+/* laptop: keep the whole stage above the docked ask bar */
+.burn:not(.stand) .journey-wrap .journey { max-height: 34vh; }
+.burn:not(.stand) .stage { min-height: calc(100dvh - 190px); }
+.burn:not(.stand) .verdict-block .verdict { font-size: clamp(30px, 3.6vw, 56px); }
+/* stand-ins after a question: one compact row of chips */
+.burn .standin { padding: 4px 12px 4px 4px; margin: 0; border-radius: 999px; gap: 8px; max-width: 34ch; }
+.burn .standin .material-icon { width: 26px; height: 26px; }
+.burn .standin span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.burn .standin small { color: var(--regolith); }
+/* answering a visitor's question: tighter top, so the chart and its arrows stay on the first screen */
+.burn.answering .verdict-block .verdict { font-size: clamp(26px, 2.8vw, 44px); }
+.burn.answering .qv .burn-q { font-size: clamp(22px, 2.4vw, 36px); }
+.burn.answering .journey-wrap .journey { max-height: 28vh; }
+.burn.answering .evidence .airlines { max-height: 22vh; }
+.more-ai { margin: 32px 0 120px; padding-left: 20px; border-left: 3px solid var(--rule); max-width: 75ch; }
+.more-ai h2 { font-size: 20px; margin-top: 0; }
+/* the two arrows on the oxygen line: red and blinking, so the eye goes there (labels stay steady to read) */
+:root { --alert: #FF5A5A; }
+.airlines .callout path { stroke: var(--alert) !important; stroke-width: 3; animation: blink 1s steps(1, end) infinite; }
+.airlines .callout text { fill: var(--alert) !important; }
+@keyframes blink { 0%, 60% { opacity: 1 } 61%, 100% { opacity: 0.15 } }

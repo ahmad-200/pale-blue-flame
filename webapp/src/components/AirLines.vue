@@ -5,7 +5,7 @@ import { computed } from 'vue'
 import { scaleLinear } from 'd3-scale'
 import { forceSimulation, forceX, forceY, forceCollide } from 'd3-force'
 
-const props = defineProps({ tests: Array, place: Object, material: String, warning: Number, asked: String })
+const props = defineProps({ tests: Array, place: Object, material: String, warning: Number, asked: String, compact: Boolean })
 const W = 900, L = 150, R = 30
 const ox = scaleLinear().domain([10, 40]).range([L, W - R])
 const px = scaleLinear().domain([0.4, 1.1]).range([L, W - R])
@@ -35,7 +35,7 @@ const middle = computed(() => range.value ? ox((range.value[0] + range.value[1])
 </script>
 
 <template>
-  <svg :viewBox="`0 ${asked ? -88 : 0} ${W} ${asked ? 288 : 200}`" class="airlines" role="img"
+  <svg :viewBox="`0 ${asked ? -88 : 0} ${W} ${(asked ? 88 : 0) + (compact ? 134 : 200)}`" class="airlines" role="img"
        :aria-label="`Oxygen and air pressure of NASA's ${material} fires compared with ${place.name}`">
     <!-- oxygen -->
     <text x="0" :y="ROW_O + 4" class="row-label">Oxygen</text>
@@ -43,10 +43,12 @@ const middle = computed(() => range.value ? ox((range.value[0] + range.value[1])
     <g v-for="v in oTicks" :key="'o' + v"><text :x="ox(v)" :y="ROW_O + 34" class="tick" text-anchor="middle">{{ v }}%</text></g>
     <line :x1="ox(21)" :x2="ox(21)" :y1="ROW_O - 22" :y2="ROW_O + 18" class="earth-line" />
     <text :x="ox(21)" :y="ROW_O - 26" class="note" text-anchor="middle">Earth air</text>
-    <line :x1="ox(warning)" :x2="ox(warning)" :y1="ROW_O - 22" :y2="ROW_O + 18" class="warn-line" />
-    <text :x="ox(warning) + 4" :y="ROW_O - 26" class="note warn">burns faster above here (NASA, at 8.2 psi)</text>
+    <g v-if="warning">
+      <line :x1="ox(warning)" :x2="ox(warning)" :y1="ROW_O - 22" :y2="ROW_O + 18" class="warn-line" />
+      <text :x="ox(warning) + 4" :y="ROW_O - 26" class="note warn">{{ warning }}%: a calculated limit, see the source</text>
+    </g>
     <rect v-if="gapO" :x="ox(gapO.a)" :y="ROW_O - 14" :width="ox(gapO.b) - ox(gapO.a)" height="28" class="gap" />
-    <text v-if="gapO" :x="(ox(gapO.a) + ox(gapO.b)) / 2" :y="ROW_O + 4" class="gap-text" text-anchor="middle">never tested</text>
+    <text v-if="gapO" :x="(ox(gapO.a) + ox(gapO.b)) / 2" :y="ROW_O + 4" class="gap-text" text-anchor="middle">no matching test</text>
     <circle v-for="d in dots" :key="material + d.t.experiment + d.t.test" :cx="d.x" :cy="d.y" r="3" class="fire">
       <title>{{ d.t.experiment }} {{ d.t.test }}: {{ d.t.oxygen_pct }}% oxygen</title>
     </circle>
@@ -67,17 +69,25 @@ const middle = computed(() => range.value ? ox((range.value[0] + range.value[1])
       </g>
     </g>
 
+    <!-- compact: pressure as two values -->
+    <text v-if="compact" x="0" :y="ROW_O + 76" class="row-label">Air pressure</text>
+    <text v-if="compact" :x="L" :y="ROW_O + 76" class="pressure-pair">
+      NASA's tests: 1 atm<tspan class="sep" dx="18">|</tspan><tspan dx="18" :class="{ off: Math.abs(place.pressure_atm - 1) > 0.1 }">{{ place.name }}: {{ place.pressure_atm }} atm</tspan>
+    </text>
+
+    <g v-if="!compact">
     <!-- air pressure -->
     <text x="0" :y="ROW_P + 4" class="row-label">Air pressure</text>
     <line :x1="L" :x2="W - R" :y1="ROW_P + 18" :y2="ROW_P + 18" class="axis" />
     <g v-for="v in pTicks" :key="'p' + v"><text :x="px(v)" :y="ROW_P + 34" class="tick" text-anchor="middle">{{ v }} atm</text></g>
     <rect v-if="gapP" :x="px(gapP.a)" :y="ROW_P - 14" :width="px(gapP.b) - px(gapP.a)" height="28" class="gap" />
-    <text v-if="gapP" :x="(px(gapP.a) + px(gapP.b)) / 2" :y="ROW_P + 4" class="gap-text" text-anchor="middle">never tested</text>
+    <text v-if="gapP" :x="(px(gapP.a) + px(gapP.b)) / 2" :y="ROW_P + 4" class="gap-text" text-anchor="middle">no matching test</text>
     <circle v-if="tests.length" :cx="px(1)" :cy="ROW_P" r="9" class="fire-group" />
     <text v-if="tests.length" :x="px(1)" :y="ROW_P - 24" class="note" text-anchor="end">all {{ tests.length }} fires (normal pressure, assumed)</text>
     <g class="marker" :style="{ transform: `translateX(${px(place.pressure_atm)}px)` }">
       <path :d="`M 0 ${ROW_P - 12} l 7 12 l -7 12 l -7 -12 z`" />
       <text :y="ROW_P + 52" text-anchor="middle">{{ place.pressure_atm }} atm</text>
+    </g>
     </g>
   </svg>
 </template>

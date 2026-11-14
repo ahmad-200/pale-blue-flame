@@ -2,7 +2,7 @@
 // Earth -> Space Station -> airlock -> Moon base -> rover, drawn as a strip.
 // Each place shows whether NASA has ever burned the chosen material in its air.
 import { beeswarm } from './useBeeswarm.js'
-const props = defineProps({ places: Array, placeId: String, status: Function, material: String, tests: Array, closest: Object })
+const props = defineProps({ places: Array, placeId: String, status: Function, material: String, tests: Array, closest: Object, twoStop: Boolean })
 const emit = defineEmits(['pick'])
 
 // where each place sits on the strip (x across, y down), and how it is drawn
@@ -12,7 +12,10 @@ const SPOTS = {
   moon: { x: 700, y: 175, icon: 'base' },
   rover: { x: 860, y: 205, icon: 'rover' },
 }
-const stops = () => props.places.filter(p => SPOTS[p.id]).map(p => ({ ...p, ...SPOTS[p.id], st: props.status(p) }))
+// on a phone: only the Station (where NASA tested) and the chosen place, side by side
+const TWO = { iss: { x: 300, y: 140 }, other: { x: 700, y: 175 } }
+const stops = () => props.places.filter(p => SPOTS[p.id] && (!props.twoStop || p.id === 'iss' || p.id === props.placeId))
+  .map(p => ({ ...p, ...SPOTS[p.id], ...(props.twoStop ? TWO[p.id === 'iss' ? 'iss' : 'other'] : {}), st: props.status(p) }))
 const flame = (x, y, s = 1) => `M ${x} ${y - 26 * s} C ${x + 14 * s} ${y - 8 * s}, ${x + 12 * s} ${y + 10 * s}, ${x} ${y + 12 * s}
   C ${x - 12 * s} ${y + 10 * s}, ${x - 14 * s} ${y - 8 * s}, ${x} ${y - 26 * s} Z`
 // one dot per real fire beside a tested place, higher = more oxygen (D3 force layout, no overlaps)
@@ -92,7 +95,7 @@ const bridge = () => {
       <text v-if="!s.st.tested" :x="s.x" :y="s.y + 2" class="q" text-anchor="middle">?</text>
       <text :x="s.x" :y="s.y - 46" class="label" text-anchor="middle">{{ s.name.replace(/ \(.*\)/, '') }}</text>
       <text :x="s.x" :y="s.y + 52" class="small" :class="s.st.tested ? 'yes' : 'no'" text-anchor="middle">
-        {{ s.st.tested ? `${s.st.count} fires tested` : 'Never tested' }}
+        {{ s.st.tested ? `${s.st.count} fires tested` : 'No matching test' }}
       </text>
     </g>
   </svg>

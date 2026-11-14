@@ -1,11 +1,11 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { store, experimentByName } from '../data.js'
-import GapMap from './GapMap.vue'
 import JourneyStrip from './JourneyStrip.vue'
 import MaterialIcon from './MaterialIcon.vue'
 import AirLines from './AirLines.vue'
 
+const props = defineProps({ stand: Boolean })   // ?stand=1: the full-screen exhibition view
 const placeId = ref('moon')
 const material = ref('SIBAL (cotton-fiberglass)')
 const place = computed(() => store.places.find(p => p.id === placeId.value))
@@ -69,11 +69,12 @@ const SLIDES = [
   ['Nomex', 'iss'], ['Nomex', 'airlock'],
   ['silicone', 'iss'], ['silicone', 'moon'],
 ]
-const STEP_MS = 3000, IDLE_MS = 20000
+const STEP_MS = 6000, IDLE_MS = 20000   // six seconds: the verdict plus one number
 const slide = ref(0), auto = ref(true), asked = ref(false)
 let tick = null, idle = null
 function show(i) {
   noMatch.value = false
+  if (asked.value) { asked.value = false; reading.value = null }
   slide.value = (i + SLIDES.length) % SLIDES.length
   ;[material.value, placeId.value] = SLIDES[slide.value]
 }
@@ -89,7 +90,8 @@ watch([material, placeId], ([m, p]) => {
   if (m !== sm || p !== sp) { noMatch.value = false; touched() }
 })
 function pick(i) { show(i); touched() }
-function toggle() { clearTimeout(idle); if (auto.value) stop(); else { asked.value = false; reading.value = null; start() } }
+function toggle() { clearTimeout(idle); if (auto.value) stop(); else backToTour() }
+function backToTour() { asked.value = false; reading.value = null; noMatch.value = false; question.value = ''; show(slide.value); start() }
 onMounted(() => { show(0); start() })
 
 // --- the question box: an AI reads the visitor's words and picks one of OUR materials and places.
@@ -98,21 +100,13 @@ const ASK_URL = import.meta.env.VITE_ASK_URL || '/api/ask'
 const question = ref(''), asking = ref(false), reading = ref(null)
 const noMatch = ref(false)   // the AI found no material we have: say so, never show a leftover one
 
-// the research behind a material: papers of the experiments that burned it, straight from NASA's record
-const KEYWORDS = { 'SIBAL (cotton-fiberglass)': ['sibal', 'cotton', 'fabric', 'textile'], 'PMMA (acrylic)': ['pmma', 'acrylic'],
-  'PMMA (assumed)': ['pmma', 'sphere'], 'Nomex': ['nomex'], 'silicone': ['silicone'], 'candle wax': ['candle', 'wax'],
-  'Ultem': ['ultem'], 'PMMA + Nomex': ['pmma', 'nomex'] }
-const research = computed(() => {
-  const names = [...new Set(mine.value.map(t => t.experiment))]
-  const words = KEYWORDS[material.value] || []
-  const papers = []
-  for (const n of names) {
-    const e = experimentByName(n); if (!e) continue
-    for (const p of e.papers) papers.push({ ...p, exp: n, id: e.id, hit: words.some(w => p.title.toLowerCase().includes(w)) })
-  }
-  papers.sort((a, b) => b.hit - a.hit)
-  return { experiments: names, papers: papers.slice(0, 5), total: papers.length }
-})
+// the place for the story's footer: which NASA experiments the dots come from
+const sources = computed(() => [...new Set(withOxygen.value.map(t => t.experiment))])
+const closestExp = computed(() => closest.value && experimentByName(closest.value.experiment))
+const isNarrow = ref(false)
+const mq = typeof window !== 'undefined' ? window.matchMedia('(max-width: 700px)') : null
+if (mq) { isNarrow.value = mq.matches; mq.addEventListener('change', e => { isNarrow.value = e.matches }) }
+
 async function ask() {
   if (!question.value.trim() || asking.value) return
   asking.value = true; reading.value = null; touched()
@@ -127,12 +121,12 @@ async function ask() {
     noMatch.value = !out.material
     reading.value = out
   } catch {
-    reading.value = { error: 'The question box needs an internet connection. The examples below still work.' }
+    reading.value = { error: 'Custom questions need an internet connection. The NASA experiment tour still works offline.' }
   } finally {
     asking.value = false; stop(); clearTimeout(idle)
     if (reading.value && !reading.value.error) {
       asked.value = true
-      await nextTick(); document.querySelector('.airlines-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      await nextTick(); window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }
 }
@@ -140,149 +134,134 @@ onBeforeUnmount(() => { clearInterval(tick); clearTimeout(idle) })
 </script>
 
 <template>
-  <form class="ask" @submit.prevent="ask">
-    <label class="sr" for="ask-input">Ask in your own words</label>
-    <input id="ask-input" v-model="question" maxlength="300" autocomplete="off"
-           placeholder="Ask in your own words, e.g. would a cotton shirt burn in a lunar habitat?" />
-    <button class="cta" :disabled="asking || !question.trim()">{{ asking ? 'Reading…' : 'Ask' }}</button>
-  </form>
-  <p v-if="reading" class="reading" :class="{ error: reading.error }" aria-live="polite">
-    <template v-if="reading.error">{{ reading.error }}</template>
-    <template v-else>{{ reading.answer }} <span class="muted small">(read by AI; the answer below comes from NASA's data)</span></template>
-  </p>
-  <div v-if="reading && reading.candidates && reading.candidates.length" class="standins">
-    <p class="small muted">NASA never burned a {{ reading.object || 'thing like that' }}<template v-if="reading.made_of"> (usually {{ reading.made_of }})</template>.
-      The closest materials NASA did test:</p>
-    <button v-for="c in reading.candidates" :key="c.material" class="standin" :class="{ on: c.material === material }"
-            @click="material = c.material; fromAsk = [c.material, placeId]; touched()">
-      <MaterialIcon :material="c.material" /><span><b>{{ c.material }}</b><br /><small>{{ c.why }}</small></span>
-    </button>
-  </div>
-
-  <h1 v-if="noMatch" class="burn-q">Would <span class="asked">“{{ question }}”</span> burn?</h1>
-  <h1 v-else class="burn-q">
-    Would
-    <label class="inline-select"><span class="sr">Material</span>
-      <select v-model="material">
-        <option v-for="[m, n] in materials" :key="m" :value="m">{{ m }}</option>
-      </select>
-    </label>
-    burn in
-    <span class="nowrap"><label class="inline-select"><span class="sr">Place</span>
-      <select v-model="placeId">
-        <option v-for="p in store.places" :key="p.id" :value="p.id">{{ p.name }}</option>
-      </select>
-    </label>?</span>
-  </h1>
-  <Transition name="swap" mode="out-in">
-    <div v-if="!noMatch" class="material-line" :key="material">
-      <MaterialIcon :material="material" />
-      <p><b>{{ material }}</b><br />{{ what }} <span class="muted small">(illustration)</span></p>
-    </div>
-  </Transition>
-
-  <div class="tour" :class="{ paused: !auto }">
-    <button class="tour-toggle" @click="toggle" :aria-label="auto ? 'Pause the tour' : 'Play the tour'">{{ auto ? 'Pause' : 'Play' }}</button>
-    <div class="tour-dots" role="tablist" aria-label="Examples">
-      <button v-for="(s, i) in SLIDES" :key="i" role="tab" :aria-selected="i === slide" :class="{ on: i === slide }"
-              :aria-label="`${s[0]} in ${store.places.find(p => p.id === s[1])?.name}`" @click="pick(i)"></button>
-    </div>
-    <div class="tour-bar"><span :key="slide + String(auto)" :style="{ animationDuration: STEP_MS + 'ms' }"></span></div>
-  </div>
-  <p class="intro">Pick a place where people live in space, and something that could catch fire there.
-    We will show you every fire NASA has lit with it, and whether any of them happened in that kind of air.</p>
-
-  <section class="journey-section">
-    <JourneyStrip :places="store.places" :place-id="placeId" :status="statusOf" :material="material" :tests="withOxygen" :closest="inside ? null : closest" @pick="id => placeId = id" />
-    <p class="muted small">Every blue dot is a real fire NASA lit with {{ material }}; higher dots had more oxygen. A dashed flame means nobody has lit it there yet.
-      Tap a place to choose it.</p>
-  </section>
-
-  <section class="airlines-section">
-    <h2 v-if="asked && reading && reading.object">Your {{ reading.object }} in {{ place.name }}: closest NASA material is {{ material }}</h2>
-    <h2 v-else>Why: {{ place.name }} compared with every {{ material }} fire NASA lit</h2>
-    <AirLines :tests="withOxygen" :place="place" :material="material" :warning="31.4"
-              :asked="asked && reading && reading.object ? reading.object : ''" />
-    <p class="muted small">Blue dots: NASA's fires. Diamond: {{ place.name }}. Amber: air nobody has tested a fire in.</p>
-  </section>
-
-  <div class="answer-row">
-  <section class="answer" :class="inside ? 'ok' : 'gap'" aria-live="polite">
-    <Transition name="swap" mode="out-in">
-      <div :key="placeId + material + noMatch">
-        <template v-if="noMatch">
-          <p class="verdict">NASA's fire tests can't answer this one.</p>
-          <p>{{ reading?.answer }}</p>
-          <p v-if="place.pressure_atm < 0.9">What we can say: no material at all has been burned in
-            {{ place.name }} air ({{ place.oxygen_pct }}% oxygen, {{ place.pressure_atm }} atm) in NASA's database.</p>
-          <p class="muted">Try a material we have: cotton fabric, acrylic, Nomex, silicone or candle wax.</p>
-        </template>
-        <template v-else-if="!withOxygen.length">
-          <p class="verdict">We can't place these fires yet.</p>
-          <p>NASA burned {{ mine.length }} samples of <b>{{ material }}</b>, but never wrote down the oxygen in those tests.
-             So we can't put them on the map yet, which is a bit frustrating.</p>
-        </template>
-        <template v-else-if="inside">
-          <p class="verdict">Yes, NASA has tested this.</p>
-          <p>{{ withOxygen.length }} fires burned {{ material }} in air like this ({{ region.min }}–{{ region.max }}% oxygen,
-             at normal pressure). What happened in them is on each experiment's page.</p>
-        </template>
-        <template v-else>
-          <p class="verdict">We don't know, because nobody has tried.</p>
-          <p>NASA has never burned {{ material }} in air like this. The closest they came was {{ closest.oxygen_pct }}% oxygen
-             at normal pressure ({{ closest.experiment }} {{ closest.test }}). This place has {{ place.oxygen_pct }}% oxygen, in thinner air.</p>
-          <p class="muted">Not tested is not the same as safe. It only means we are guessing.</p>
-        </template>
-        <p v-if="place.oxygen_pct > 31.4 && place.pressure_atm < 0.6" class="warn">
-          {{ store.warning.text }} <a :href="store.warning.source" target="_blank">Source</a>
+  <div class="burn" :class="{ stand, answering: asked }">
+    <section class="stage">
+      <!-- 1. the question and the verdict, first -->
+      <header class="qv">
+        <p v-if="asked && reading && reading.object" class="asked-line">
+          NASA never burned a {{ reading.object }}. The closest material NASA tested is <b>{{ material }}</b>
+          <span class="muted">(a stand-in, not the object itself)</span>
+          <br v-if="reading.made_of" /><span v-if="reading.made_of" class="muted small">Usually made of: {{ reading.made_of }}.</span>
         </p>
+        <h1 v-if="noMatch" class="burn-q">Would your <span class="asked">{{ reading?.object || question }}</span> burn?</h1>
+        <h1 v-else-if="asked && reading && reading.object" class="burn-q">
+          Would your <span class="pick">{{ reading.object }}</span> burn in
+          <span class="nowrap"><label class="inline-select"><span class="sr">Place</span>
+            <select v-model="placeId">
+              <option v-for="p in store.places" :key="p.id" :value="p.id">{{ p.name }}</option>
+            </select>
+          </label>?</span>
+        </h1>
+        <h1 v-else-if="stand" class="burn-q">Would <span class="pick">{{ material }}</span> burn in <span class="pick">{{ place.name }}</span>?</h1>
+        <h1 v-else class="burn-q">
+          Would
+          <label class="inline-select"><span class="sr">Material</span>
+            <select v-model="material">
+              <option v-for="[m] in materials" :key="m" :value="m">{{ m }}</option>
+            </select>
+          </label>
+          burn in
+          <span class="nowrap"><label class="inline-select"><span class="sr">Place</span>
+            <select v-model="placeId">
+              <option v-for="p in store.places" :key="p.id" :value="p.id">{{ p.name }}</option>
+            </select>
+          </label>?</span>
+        </h1>
+
+        <Transition name="swap" mode="out-in">
+          <div class="verdict-block" :class="inside ? 'ok' : 'gap'" :key="placeId + material + noMatch" aria-live="polite">
+            <template v-if="noMatch">
+              <p class="verdict">NASA's fire data can't answer this one.</p>
+              <p class="why">{{ reading?.answer }}</p>
+            </template>
+            <template v-else-if="!withOxygen.length">
+              <p class="verdict">We can't place these fires.</p>
+              <p class="why">NASA burned {{ mine.length }} samples of {{ material }}, but its tables don't record the oxygen.</p>
+            </template>
+            <template v-else-if="inside">
+              <p class="verdict">NASA tested this.</p>
+              <p class="why">{{ withOxygen.length }} fires with {{ material }} in air like the Space Station's. Tested is not the same as safe:
+                what happened in each is on its experiment page.</p>
+            </template>
+            <template v-else>
+              <p class="verdict">We don't know. No matching test.</p>
+              <p class="why">NASA tested {{ material }} only in different air: {{ region.min }}–{{ region.max }}% oxygen at 1 atm.
+                Not tested here does not mean safe.</p>
+            </template>
+          </div>
+        </Transition>
+
+        <Transition name="swap" mode="out-in">
+          <p v-if="!noMatch && !asked" class="material-line" :key="material">
+            <MaterialIcon :material="material" /><span><b>{{ material }}:</b> {{ what }} <span class="muted small">(illustration)</span></span>
+          </p>
+        </Transition>
+
+        <div v-if="!stand && reading && reading.candidates && reading.candidates.length > 1" class="standins">
+          <span class="muted small">Other close materials NASA tested:</span>
+          <button v-for="c in reading.candidates" :key="c.material" class="standin" :title="c.why" :class="{ on: c.material === material }"
+                  @click="material = c.material; fromAsk = [c.material, placeId]; touched()">
+            <MaterialIcon :material="c.material" /><span><b>{{ c.material }}</b> <small>{{ c.why }}</small></span>
+          </button>
+        </div>
+        <p v-if="reading && reading.error" class="reading error">{{ reading.error }}</p>
+      </header>
+
+      <!-- 2. the journey: where NASA tested, where nobody has -->
+      <div class="journey-wrap">
+        <JourneyStrip :places="store.places" :place-id="placeId" :status="statusOf" :material="material" :tests="withOxygen"
+                      :closest="inside ? null : closest" :two-stop="isNarrow" @pick="id => placeId = id" />
       </div>
-    </Transition>
-  </section>
 
-  <section class="closest" aria-live="polite">
-    <h2>The closest NASA got</h2>
-    <Transition name="swap" mode="out-in">
-      <ol class="nearest" :key="placeId + material">
-        <li v-for="t in nearest.slice(0, 3)" :key="t.experiment + t.test">
-          <a :href="link(t.experiment)">{{ t.experiment }} {{ t.test }}</a>
-          <span class="gap-text">{{ t.gap }}</span>
-          <small class="muted">{{ t.oxygen_pct }}% oxygen<template v-if="t.airflow_start_cm_s != null">, {{ t.airflow_start_cm_s }} cm/s airflow</template></small>
-        </li>
-        <li v-if="!nearest.length" class="muted">None yet: no fire with this material has its oxygen written down.</li>
-      </ol>
-    </Transition>
-    <p class="muted small">Distances, not danger scores.</p>
-  </section>
-  </div>
+      <!-- 3. the evidence, compact -->
+      <div class="evidence">
+        <AirLines :tests="withOxygen" :place="place" :material="material" compact
+                  :asked="asked && reading && reading.object ? reading.object : ''" />
+      </div>
 
-  <section v-if="research.papers.length" class="research">
-    <h2>Read the research</h2>
-    <p class="muted small">Papers NASA lists for the experiments that burned {{ material }}
-      ({{ research.experiments.join(', ') }}): {{ research.total }} in all. The most relevant first.</p>
-    <ul class="papers">
-      <li v-for="p in research.papers" :key="p.title">
-        <a v-if="p.doi" :href="`https://doi.org/${p.doi}`" target="_blank">{{ p.title }}</a><span v-else>{{ p.title }}</span>
-        <small class="muted"> {{ p.authors }}. From <a :href="`#/experiment/${p.id}`">{{ p.exp }}</a>.</small>
-      </li>
-    </ul>
-  </section>
-
-  <div class="facts">
-    <section>
-      <h2>The air there</h2>
-      <p class="air">{{ place.oxygen_pct }}% oxygen, {{ place.pressure_psia }} psi ({{ place.pressure_atm }} atm)</p>
-      <p class="muted">{{ place.note }} <a :href="place.source" target="_blank">Source</a></p>
+      <!-- 4. source and progress -->
+      <div class="stage-foot">
+        <p class="muted small">
+          <template v-if="sources.length">Experiments: {{ sources.join(', ') }}, NASA Physical Sciences Informatics.</template>
+          {{ place.name }} air is a NASA <template v-if="place.id === 'iss'">cabin value</template><template v-else>proposed design atmosphere</template>
+          (<a :href="place.source" target="_blank">source</a>). Illustrations not to scale.
+        </p>
+        <div class="tour" :class="{ paused: !auto }">
+          <button v-if="!stand && asked" class="tour-toggle" @click="backToTour">Back to the tour</button>
+          <button v-else-if="!stand" class="tour-toggle" @click="toggle" :aria-label="auto ? 'Pause the tour' : 'Play the tour'">{{ auto ? 'Pause' : 'Play' }}</button>
+          <span class="muted small">Story {{ slide + 1 }} of {{ SLIDES.length }}</span>
+          <div class="tour-dots" role="tablist" aria-label="Examples">
+            <button v-for="(s, i) in SLIDES" :key="i" role="tab" :aria-selected="i === slide" :class="{ on: i === slide && !asked }"
+                    :aria-label="`${s[0]} in ${store.places.find(p => p.id === s[1])?.name}`" @click="pick(i)"></button>
+          </div>
+          <div class="tour-bar"><span :key="slide + String(auto)" :style="{ animationDuration: STEP_MS + 'ms' }"></span></div>
+        </div>
+      </div>
     </section>
 
+    <!-- below the first screen (laptop): the closest test, one click into the research -->
+    <section v-if="!stand && closest && !inside" class="closest-one">
+      <h2>The closest NASA got</h2>
+      <p><a :href="link(closest.experiment)">{{ closest.experiment }} {{ closest.test }}</a>: {{ closest.oxygen_pct }}% oxygen at 1 atm,
+        {{ closest.material_text }}. Compared with {{ place.name }}: {{ closest.gap }}.</p>
+      <p><a v-if="closestExp" :href="`#/experiment/${closestExp.id}`" class="cta">Explore this experiment</a>
+        <span class="muted small"> Its papers, the full oxygen and pressure chart, and every test are on the experiment page.</span></p>
+    </section>
 
+    <!-- after a question: background from the AI, kept apart from NASA's data -->
+    <section v-if="!stand && asked && reading && reading.more" class="more-ai">
+      <h2>More about your {{ reading.object }}</h2>
+      <p>{{ reading.more }}</p>
+      <p class="muted small">General background written by AI. It is not a NASA test result; the verdict above comes only from NASA's data.</p>
+    </section>
+
+    <!-- the ask bar, docked at the bottom (not on the unattended stand) -->
+    <form v-if="!stand" class="ask-bar" @submit.prevent="ask">
+      <label class="sr" for="ask-input">Ask about something you own</label>
+      <input id="ask-input" v-model="question" maxlength="300" autocomplete="off"
+             placeholder="Ask about something you own, e.g. would my running shoe burn in a Moon rover?" />
+      <button class="cta" :disabled="asking || !question.trim()">{{ asking ? 'Reading…' : 'Ask' }}</button>
+      <span class="muted small ask-note">AI maps your words; NASA supplies the data.</span>
+    </form>
   </div>
-
-  <details class="map">
-    <summary>Show the detailed chart (oxygen and air pressure)</summary>
-    <GapMap :tests="store.tests" :material="material" :places="store.places" :place="place" :region="region" />
-    <p class="muted small">Each dot is one fire NASA lit (yours are blue). The diamonds are places people live.
-      Higher up means more oxygen; further left means thinner air. The empty space is what nobody has tested yet.
-      (We assume the tests ran at normal cabin pressure, because NASA's tables don't say.)</p>
-  </details>
 </template>

@@ -2,11 +2,14 @@
 import { computed } from 'vue'
 import { store, experimentById } from '../data.js'
 import FireReplay from './FireReplay.vue'
+import GapMap from './GapMap.vue'
 
 const props = defineProps({ id: String })
 const e = computed(() => experimentById(props.id))
 const tests = computed(() => e.value ? store.tests.filter(t => t.experiment === e.value.name) : [])
 const materials = computed(() => [...new Set(tests.value.map(t => t.material))].join(', '))
+const firstMaterial = computed(() => tests.value.find(t => t.oxygen_pct != null)?.material)
+const station = computed(() => store.places.find(p => p.id === 'iss'))
 const sections = [['objective', 'What they wanted to know'], ['approach', 'How they did it'], ['hypothesis', 'What they expected'], ['earth_benefits', 'Why it matters down here']]
 </script>
 
@@ -35,6 +38,14 @@ const sections = [['objective', 'What they wanted to know'], ['approach', 'How t
     <section v-if="e.id === 'PSI-98' && store.saffire">
       <h2>The fire, as its heat sensors saw it</h2>
       <FireReplay :data="store.saffire" />
+    </section>
+
+    <section v-if="firstMaterial">
+      <h2>Every test, by oxygen and air pressure</h2>
+      <GapMap :tests="store.tests" :material="firstMaterial" :places="store.places" :place="station" :region="null" />
+      <p class="muted small">Blue: {{ firstMaterial }} fires from NASA's tables (test pressure assumed 1 atm). Diamonds: places people live.
+        The dashed amber line is a calculated burning-rate limit for 8.2 psi air, from one study under its own assumptions,
+        not a safe/unsafe border (<a :href="store.warning?.source" target="_blank">source</a>).</p>
     </section>
 
     <section v-for="[k, label] in sections" :key="k" v-show="e[k]">

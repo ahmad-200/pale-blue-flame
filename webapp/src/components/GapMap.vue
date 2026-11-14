@@ -43,7 +43,7 @@ const yTicks = y.ticks(6)
     <text :x="14" :y="(T + H - B) / 2" class="axis" text-anchor="middle" :transform="`rotate(-90 14 ${(T + H - B) / 2})`">oxygen</text>
 
     <line :x1="L" :x2="W - R" :y1="y(31.4)" :y2="y(31.4)" class="limit" />
-    <text :x="L + 6" :y="y(31.4) - 6" class="limit-text">NASA: above 31.4% burns faster at 8.2 psi</text>
+    <text :x="L + 6" :y="y(31.4) - 6" class="limit-text">31.4%: a calculated limit at 8.2 psi, one study (see note below)</text>
 
     <rect v-if="region" :x="x(0.9)" :y="y(region.max + 1)" :width="x(1.1) - x(0.9)"
           :height="y(region.min - 1) - y(region.max + 1)" class="region" />
