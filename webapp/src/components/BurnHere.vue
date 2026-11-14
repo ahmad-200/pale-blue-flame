@@ -110,10 +110,20 @@ onMounted(() => { show(0); start(); window.addEventListener('keydown', onKey) })
 // --- the question box: an AI reads the visitor's words and picks one of OUR materials and places.
 // The answer itself still comes from NASA's data. The key lives on the server (/api/ask), never here.
 const ASK_URL = import.meta.env.VITE_ASK_URL || '/api/ask'
+// The GitHub Pages copy (VITE_STATIC=1) has no backend. Its example questions play back replies saved from the real
+// question service (data/answers.json); any other question says plainly that it needs the backend and a DeepSeek key.
+const STATIC = import.meta.env.VITE_STATIC === '1'
+const KEY_NEEDED = 'Live questions need the backend running with a DeepSeek API key (set DEEPSEEK_API_KEY). The example questions work without it.'
+const norm = q => q.toLowerCase().replace(/[^a-z0-9]+/g, '')
+let saved = null
+const loadSaved = () => saved || (saved = fetch('./data/answers.json').then(r => r.ok ? r.json() : { answers: {} })
+  .then(j => Object.fromEntries(Object.entries(j.answers || {}).map(([q, a]) => [norm(q), a]))).catch(() => ({})))
+// "a running shoe", "an NVIDIA H100 GPU", "an umbrella"
+const article = w => (/^[aeiou]/i.test(w || '') || /^[FHLMNRSX][A-Z0-9]/.test(w || '')) ? 'an' : 'a'
 const question = ref(''), asking = ref(false), reading = ref(null)
 // example questions: one click asks it, so a visitor sees a real answer arrive
-const PROMPTS = ['Would my running shoe burn in a Moon rover?', 'Would my cotton shirt burn on the Station?',
-  'Would a candle burn on Mars?', 'Would a metal spoon burn on the Moon?']
+const PROMPTS = ['Would my running shoe burn in a Moon rover?', 'Will an NVIDIA H100 GPU burn on Mars?',
+  'Would my cotton shirt burn on the Station?', 'Would a candle burn on Mars?', 'Would a metal spoon burn on the Moon?']
 function askThis(q) { if (asking.value) return; question.value = q; ask() }
 // seconds since the question was sent, shown beside the spinner
 const waited = ref(0); let waitTimer = null
@@ -155,9 +165,16 @@ async function ask() {
   asking.value = true; reading.value = null; touched()
   waited.value = 0; clearInterval(waitTimer); waitTimer = setInterval(() => waited.value++, 1000)
   try {
-    const r = await fetch(ASK_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ question: question.value }) })
-    const out = await r.json()
+    let out
+    if (STATIC) {
+      out = (await loadSaved())[norm(question.value)]
+      await new Promise(r => setTimeout(r, 900))            // let the spinner show, as a live answer would
+      if (!out) out = { error: KEY_NEEDED }
+    } else {
+      const r = await fetch(ASK_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ question: question.value }) })
+      out = await r.json()
+    }
     if (out.error) { reading.value = { error: out.error }; return }
     if (out.place) placeId.value = out.place
     if (out.material) material.value = out.material
@@ -165,7 +182,7 @@ async function ask() {
     noMatch.value = !out.material
     reading.value = out
   } catch {
-    reading.value = { error: 'Custom questions need an internet connection. The NASA experiment tour still works offline.' }
+    reading.value = { error: 'The question service did not answer. ' + KEY_NEEDED }
   } finally {
     asking.value = false; clearInterval(waitTimer); stop(); clearTimeout(idle)
     if (reading.value && !reading.value.error) {
@@ -187,7 +204,7 @@ onBeforeUnmount(() => { clearInterval(tick); clearTimeout(idle); clearInterval(w
           <span>Reading <b>“{{ question }}”</b>, then looking up the closest materials NASA tested… <span class="muted">{{ waited }} s</span></span>
         </p>
         <p v-if="asked && reading && reading.object && !noMatch" class="asked-line">
-          NASA never burned a {{ reading.object }}. The closest material NASA tested is <b>{{ material }}</b>{{ " " }}
+          NASA never burned {{ article(reading.object) }} {{ reading.object }}. The closest material NASA tested is <b>{{ material }}</b>{{ " " }}
           <span class="muted">(a stand-in, not the object itself)</span>
           <br v-if="reading.made_of" /><span v-if="reading.made_of" class="muted small">Usually made of: {{ reading.made_of }}.</span>
         </p>
@@ -316,7 +333,7 @@ onBeforeUnmount(() => { clearInterval(tick); clearTimeout(idle); clearInterval(w
              placeholder="Ask about something you own, e.g. would my running shoe burn in a Moon rover?" />
       <button class="cta ask-btn" :disabled="asking || !question.trim()" :aria-busy="asking">
         <span v-if="asking" class="spinner dark" aria-hidden="true"></span>{{ asking ? 'Reading…' : 'Ask' }}</button>
-      <span class="muted small ask-note">AI maps your words; NASA supplies the data.</span>
+      <span class="muted small ask-note">{{ STATIC ? 'Examples use saved AI replies; NASA supplies the data.' : 'AI maps your words; NASA supplies the data.' }}</span>
     </form>
   </div>
 </template>

@@ -61,6 +61,12 @@ npm run dev
 
 The site works without a network connection. The question box needs the backend.
 
+## The site online
+
+The site is online at **https://mtaimourz.github.io/pale-blue-flame/**. GitHub Pages serves it from the `gh-pages` branch. To publish a new version, run `webapp/scripts/deploy-pages.sh`: it builds the static site and pushes the build to that branch.
+
+The online copy has no backend and no API key. The five example questions show saved replies from the question service (`data/answers.json`). For every other question, the page says that live answers need the backend with a DeepSeek API key. To ask anything, run the site and the backend on your computer, as the next section shows.
+
 ## Run the question box
 
 You need Python 3.11 or a later version, [uv](https://docs.astral.sh/uv/) and a DeepSeek API key.

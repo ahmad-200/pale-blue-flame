@@ -178,7 +178,8 @@ class Ask(BaseModel):
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "materials": len(MATERIALS), "places": len(PLACES), "tests": len(TESTS)}
+    return {"status": "ok", "materials": len(MATERIALS), "places": len(PLACES), "tests": len(TESTS),
+            "ai": bool(os.environ.get("DEEPSEEK_API_KEY"))}
 
 
 @app.post("/api/ask")
@@ -187,7 +188,7 @@ def ask(body: Ask):
     if not q:
         return {"error": "Type a question first."}
     if not os.environ.get("DEEPSEEK_API_KEY"):
-        return {"error": "The question box is not set up on this server (no API key)."}
+        return {"error": "Live questions need the backend running with a DeepSeek API key (set DEEPSEEK_API_KEY). The example questions work without it.", "needs_key": True}
     s = agent.invoke({"question": q})
     c = s.get("candidates") or []
     return {"error": s.get("error"), "object": s.get("object"), "made_of": s.get("made_of"), "candidates": c,
