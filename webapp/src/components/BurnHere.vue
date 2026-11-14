@@ -91,13 +91,21 @@ watch([material, placeId], ([m, p]) => {
   const [sm, sp] = SLIDES[slide.value]
   if (m !== sm || p !== sp) { noMatch.value = false; touched() }
 })
-function pick(i) { show(i); touched() }
+// a person chose an example (a dot or an arrow): go there and pause the tour until they press Play
+function pick(i) { show(i); stop(); clearTimeout(idle) }
+const step = d => pick(slide.value + d)
+// the keyboard arrows do the same, unless the person is typing or choosing in a menu
+function onKey(e) {
+  if (e.altKey || e.ctrlKey || e.metaKey || !['ArrowLeft', 'ArrowRight'].includes(e.key)) return
+  if (e.target.closest?.('input, textarea, select, [contenteditable], .closer')) return
+  e.preventDefault(); step(e.key === 'ArrowLeft' ? -1 : 1)
+}
 // reading the tabs below: stop the tour for good (Play starts it again), so the page does not change under the reader
 function holdTour() { stop(); clearTimeout(idle) }
 function toCloser() { holdTour(); document.getElementById('closer')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }
 function toggle() { clearTimeout(idle); if (auto.value) stop(); else backToTour() }
 function backToTour() { asked.value = false; reading.value = null; noMatch.value = false; question.value = ''; show(slide.value); start() }
-onMounted(() => { show(0); start() })
+onMounted(() => { show(0); start(); window.addEventListener('keydown', onKey) })
 
 // --- the question box: an AI reads the visitor's words and picks one of OUR materials and places.
 // The answer itself still comes from NASA's data. The key lives on the server (/api/ask), never here.
@@ -166,7 +174,7 @@ async function ask() {
     }
   }
 }
-onBeforeUnmount(() => { clearInterval(tick); clearTimeout(idle); clearInterval(waitTimer) })
+onBeforeUnmount(() => { clearInterval(tick); clearTimeout(idle); clearInterval(waitTimer); window.removeEventListener('keydown', onKey) })
 </script>
 
 <template>
@@ -265,7 +273,13 @@ onBeforeUnmount(() => { clearInterval(tick); clearTimeout(idle); clearInterval(w
         <div class="tour" :class="{ paused: !auto }">
           <button v-if="!stand && asked" class="tour-toggle" @click="backToTour">Back to the tour</button>
           <button v-else-if="!stand" class="tour-toggle" @click="toggle" :aria-label="auto ? 'Pause the tour' : 'Play the tour'">{{ auto ? 'Pause' : 'Play' }}</button>
-          <span class="muted small">Story {{ slide + 1 }} of {{ SLIDES.length }}</span>
+          <button class="tour-step" type="button" aria-label="Previous example" title="Previous (←)" @click="step(-1)">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
+          </button>
+          <span class="muted small tour-count">Story {{ slide + 1 }} of {{ SLIDES.length }}</span>
+          <button class="tour-step" type="button" aria-label="Next example" title="Next (→)" @click="step(1)">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
+          </button>
           <div class="tour-dots" role="tablist" aria-label="Examples">
             <button v-for="(s, i) in SLIDES" :key="i" role="tab" :aria-selected="i === slide" :class="{ on: i === slide && !asked }"
                     :aria-label="`${s[0]} in ${store.places.find(p => p.id === s[1])?.name}`" @click="pick(i)"></button>

@@ -17,7 +17,7 @@ onMounted(loadData)
 </script>
 
 <template>
-  <CosmicBackdrop :earth="!stand" />
+  <CosmicBackdrop />
   <header v-if="!stand" class="top">
     <a href="#/" class="brand"><span class="brand-flame" aria-hidden="true"></span>Pale Blue Flame</a>
     <span class="tagline muted small">In space, a flame has nowhere to rise. NASA lit real fires to learn what burns.</span>
@@ -29,8 +29,8 @@ onMounted(loadData)
   </main>
   <footer v-if="!stand" class="muted">
     Data: NASA Physical Sciences Informatics, Combustion Science ({{ store.meta.fetched }}). NASA Space Apps 2026, Flame in Freefall.
-    <span class="pbd-note">The sky is a tribute to Voyager 1’s Pale Blue Dot photograph: a drawing, not a star map.
-      Photos: NASA (Earth, Apollo 17; Moon, Galileo; Mars, Viking; the Station from Atlantis, STS-135; the McCandless spacewalk, STS-41B;
-      the Lunar Electric Rover prototype; an Apollo 14 lunar module standing in for a Moon base, which nobody has built yet).</span>
+    <span class="pbd-note">The sky is a drawing of a spiral galaxy in the pale blue of a flame in microgravity: not a photograph, not a star map.
+      Photos: NASA (Earth, Apollo 17; Moon, Galileo; Mars, Viking; the Station, Expedition 66 from a Crew Dragon; the McCandless spacewalk, STS-41B).
+      The Moon base and the rover are NASA concept art: nobody has built either yet.</span>
   </footer>
 </template>

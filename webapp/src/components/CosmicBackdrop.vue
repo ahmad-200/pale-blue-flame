@@ -1,54 +1,10 @@
 <script setup>
-// The sky behind every page: a tribute to Voyager 1's Pale Blue Dot, not a star catalog.
-// Three layers: the void (near black), a sparse fixed starfield, and one soft band of scattered sunlight
-// (in the photo, sunlight scattered inside the camera optics). Positions come from a seeded random
-// function, so refreshes, routes and carousel slides never regenerate the sky.
+// The sky behind the page: a spiral galaxy in the pale blue of a flame in microgravity.
+// One still picture (drawn by scripts/make-galaxy.py, not a photograph or a star map) that drifts a few pixels
+// over a minute. The drift moves the whole layer on the GPU, so nothing is redrawn while it moves.
 import { onMounted, onBeforeUnmount, ref } from 'vue'
 
-const props = defineProps({ earth: Boolean })   // the tiny pale blue point, on Home only
-const W = 1920, H = 1080
-
-function mulberry32(seed) {                      // small deterministic PRNG
-  return () => {
-    seed |= 0; seed = (seed + 0x6D2B79F5) | 0
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed)
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-  }
-}
-
-// the content column (text, charts) sits roughly here at 1920 wide: fewer and fainter stars behind it
-const inContent = (x, y) => x > 380 && x < 1540 && y > 90 && y < 1000
-
-const stars = (() => {
-  const rnd = mulberry32(1990)                   // the year of the photograph
-  const out = []
-  // a few loose groupings with empty space around them, plus a thin scatter everywhere
-  const groups = Array.from({ length: 6 }, () => ({ x: rnd() * W, y: rnd() * H, r: 90 + rnd() * 160 }))
-  let tries = 0
-  while (out.length < 150 && tries++ < 4000) {
-    let x, y
-    if (rnd() < 0.45) {
-      const g = groups[Math.floor(rnd() * groups.length)], a = rnd() * Math.PI * 2, d = Math.sqrt(rnd()) * g.r
-      x = g.x + Math.cos(a) * d; y = g.y + Math.sin(a) * d
-    } else { x = rnd() * W; y = rnd() * H }
-    if (x < 0 || x > W || y < 0 || y > H) continue
-    const behind = inContent(x, y)
-    if (behind && rnd() < 0.55) continue          // fewer behind the content
-    const bright = rnd() < 0.07
-    out.push({
-      x: +x.toFixed(1), y: +y.toFixed(1),
-      r: bright ? 1.3 + rnd() * 0.7 : 0.45 + rnd() * 0.55,
-      o: (bright ? 0.75 : 0.25 + rnd() * 0.4) * (behind ? 0.6 : 1),
-      blue: rnd() < 0.35,                         // white or a desaturated blue-white, never amber
-      halo: bright && rnd() < 0.5,
-      phone: rnd() < 0.28,                         // about 40 of them stay on a phone
-    })
-  }
-  return out
-})()
-
-// pause the slow drift when the tab is hidden (nothing to render for nobody)
+// pause the drift when the tab is hidden (nothing to render for nobody)
 const hidden = ref(false)
 const onVis = () => { hidden.value = document.hidden }
 onMounted(() => document.addEventListener('visibilitychange', onVis))
@@ -57,75 +13,22 @@ onBeforeUnmount(() => document.removeEventListener('visibilitychange', onVis))
 
 <template>
   <div class="cosmos" aria-hidden="true">
-    <svg :class="{ paused: hidden }" :viewBox="`0 0 ${W} ${H}`" preserveAspectRatio="xMidYMid slice">
-      <defs>
-        <!-- the void: almost black, with a trace of depth, not a colored wash -->
-        <radialGradient id="void" cx="62%" cy="38%" r="85%">
-          <stop offset="0" stop-color="#0A0E16" />
-          <stop offset="0.55" stop-color="#06080D" />
-          <stop offset="1" stop-color="#040508" />
-        </radialGradient>
-        <!-- scattered sunlight: soft across its width, fading along its length -->
-        <linearGradient id="band-across" x1="0" x2="1" y1="0" y2="0">
-          <stop offset="0" stop-color="#CFE3FF" stop-opacity="0" />
-          <stop offset="0.5" stop-color="#F2F6FF" stop-opacity="1" />
-          <stop offset="1" stop-color="#CFE3FF" stop-opacity="0" />
-        </linearGradient>
-        <linearGradient id="band-along" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0" stop-color="#fff" stop-opacity="0.12" />
-          <stop offset="0.55" stop-color="#fff" stop-opacity="0.6" />
-          <stop offset="1" stop-color="#fff" stop-opacity="1" />
-        </linearGradient>
-        <mask id="band-fade"><rect x="-200" y="-300" width="2400" height="1700" fill="url(#band-along)" /></mask>
-        <radialGradient id="halo">
-          <stop offset="0" stop-color="#E8F1FF" stop-opacity="0.5" />
-          <stop offset="1" stop-color="#E8F1FF" stop-opacity="0" />
-        </radialGradient>
-        <radialGradient id="earth">
-          <stop offset="0" stop-color="#DDF0FF" />
-          <stop offset="0.5" stop-color="#9FD3FF" />
-          <stop offset="1" stop-color="#9FD3FF" stop-opacity="0" />
-        </radialGradient>
-      </defs>
-
-      <rect :width="W" :height="H" fill="url(#void)" />
-
-      <g>
-        <!-- the Voyager light: one broad, faint, slightly tilted band, and an even fainter one -->
-        <g mask="url(#band-fade)">
-          <rect x="1180" y="-300" width="300" height="1700" fill="url(#band-across)" opacity="0.055"
-                transform="rotate(14 1330 540)" />
-          <rect x="560" y="-300" width="180" height="1700" fill="url(#band-across)" opacity="0.025"
-                transform="rotate(14 650 540)" />
-        </g>
-
-        <!-- the stars: fixed relative to one another -->
-        <g>
-          <template v-for="(s, i) in stars" :key="i">
-            <circle v-if="s.halo" :cx="s.x" :cy="s.y" :r="s.r * 5" fill="url(#halo)" :class="{ phone: s.phone }" />
-            <circle :cx="s.x" :cy="s.y" :r="s.r" :fill="s.blue ? '#DCE8FF' : '#FFFFFF'" :opacity="s.o" :class="{ phone: s.phone }" />
-          </template>
-        </g>
-
-        <!-- distant Earth: a tiny pale blue point inside the main band (Home only) -->
-        <g v-if="earth">
-          <circle cx="1428" cy="150" r="5" fill="url(#earth)" opacity="0.55" />
-          <circle cx="1428" cy="150" r="1.6" fill="#CFE8FF" />
-        </g>
-      </g>
-    </svg>
+    <div class="sky" :class="{ paused: hidden }"></div>
+    <div class="veil"></div>
   </div>
 </template>
 
 <style scoped>
 .cosmos { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; background: #05070B; }
-/* almost still: the whole sky drifts a few pixels over a minute. The drift moves the <svg> element itself,
-   so the browser moves one ready-made GPU layer; animating groups inside the SVG made it re-render the full-screen
-   sky (gradients, mask, 150 stars) on every frame. The svg is 12px larger than the screen so no edge ever shows. */
-.cosmos svg { position: absolute; inset: -12px; width: calc(100% + 24px); height: calc(100% + 24px);
+/* 12px larger than the screen on every side, so the drift never shows an edge */
+.sky { position: absolute; inset: -12px; background: #05070B url('/img/galaxy.webp') center / cover no-repeat;
   will-change: transform; animation: drift 56s ease-in-out infinite alternate; }
-.cosmos svg.paused { animation-play-state: paused; }
+.sky.paused { animation-play-state: paused; }
+/* a soft shade behind the reading column, so text over the bright arms stays easy to read */
+.veil { position: absolute; inset: 0;
+  background: linear-gradient(90deg, rgba(5, 7, 11, 0) 0%, rgba(5, 7, 11, .38) 22%, rgba(5, 7, 11, .38) 78%, rgba(5, 7, 11, 0) 100%); }
 @keyframes drift { from { transform: translate(0, 0) } to { transform: translate(-6px, 3px) } }
-@media (max-width: 700px) { circle:not(.phone) { display: none; } }
-@media (prefers-reduced-motion: reduce) { .cosmos svg { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .sky { animation: none; } }
+/* phones: the galaxy's centre stays on screen */
+@media (max-width: 700px) { .sky { background-position: 66% center; } .veil { background: rgba(5, 7, 11, .3); } }
 </style>

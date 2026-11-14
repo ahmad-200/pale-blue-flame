@@ -102,20 +102,20 @@ Know these limits before you use the data:
 - NASA tables do not record the pressure of the material tests. We use cabin pressure (approximately 1 atm), and the data shows this assumption.
 - "No matching test" applies only to the data that we used. It does not apply to all fire tests.
 - The atmospheres for the Moon, the rover and Mars are proposals. Real missions can be different.
-- The background is a tribute to the Voyager 1 Pale Blue Dot photograph. It is a drawing, not a star map.
+- The background is a drawing of a spiral galaxy, made by `webapp/scripts/make-galaxy.py`. It is not a photograph or a star map.
 - The distances in the picture are real numbers, but the picture is not to scale.
-- No Moon base exists. The picture of the Moon base is an Apollo 14 lunar module.
+- No Moon base or pressurized rover exists yet. Their pictures are NASA concept art.
 
-The photographs are from the [NASA Image and Video Library](https://images.nasa.gov):
+The pictures are from NASA:
 
 | Picture | NASA image |
 |---|---|
 | Earth | Apollo 17, `as17-148-22727` |
 | Moon | Galileo, `PIA00405` |
 | Mars | Viking, `PIA00407` |
-| Space Station | STS-135, `s135e011814` |
+| Space Station | Expedition 66 mosaic, photographed from a Crew Dragon (2021) |
 | Spacewalk | STS-41B, Bruce McCandless, `s84-27017` |
-| Pressurized rover | Lunar Electric Rover prototype, `jsc2008e138809` |
-| Moon base | Apollo 14 lunar module, `as14-66-09277` |
+| Pressurized rover | Artemis pressurized rover, artist's concept ([NASA](https://www.nasa.gov/feature/living-and-working-on-the-moon/)) |
+| Moon base | Artemis Lunar Surface Habitat, concept art |
 
 We hope one thing is hard to miss when you leave. We know a great deal about fire in one kind of air, and almost nothing about the air we are about to live in.

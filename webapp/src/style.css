@@ -667,3 +667,32 @@ main { padding-bottom: 120px; }
 .burn:not(.stand) .journey-wrap .journey { max-height: 37vh; }
 @media (max-height: 880px) { .burn:not(.stand) .journey-wrap .journey { max-height: 35vh; } }
 @media (max-width: 700px) { .burn:not(.stand) .journey-wrap .journey { max-height: none; } }
+
+/* the ask bar: its own window onto the galaxy (a brighter slice of the same picture, still, so it costs nothing),
+   with a pale blue rim and glow so it never blends into the sky behind it */
+.ask-bar {
+  background:
+    linear-gradient(180deg, rgba(16, 26, 46, .55), rgba(10, 16, 30, .72)),
+    url('/img/galaxy.webp') 63% 42% / 230% auto no-repeat,
+    #101A2E;
+  border: 1px solid rgba(159, 211, 255, .55);
+  box-shadow: 0 0 0 1px rgba(5, 7, 11, .9), 0 0 28px rgba(159, 211, 255, .28), 0 18px 48px rgba(0, 0, 0, .7);
+}
+.ask-bar input { background: rgba(6, 10, 18, .82); border-color: rgba(159, 211, 255, .3); color: var(--hull); }
+.ask-bar input::placeholder { color: #A9B6CC; }
+.ask-bar input:focus-visible { border-color: var(--flame); box-shadow: 0 0 0 3px rgba(159, 211, 255, .18); }
+.ask-bar .ask-note { color: #C9D6EA; text-shadow: 0 1px 3px rgba(0, 0, 0, .8); }
+.ask-bar .prompt { background: rgba(6, 10, 18, .6); }
+
+/* previous / next arrows around the story count */
+.tour-step { width: 32px; height: 32px; flex: none; display: grid; place-items: center; padding: 0; cursor: pointer;
+  background: rgba(13, 19, 32, .7); color: var(--regolith); border: 1px solid var(--rule); border-radius: 50%;
+  transition: color .15s, border-color .15s, transform .12s; }
+.tour-step svg { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.tour-step:hover { color: var(--hull); border-color: var(--flame); }
+.tour-step:active { transform: scale(.92); }
+.tour-count { min-width: 82px; text-align: center; }
+.stand-mode .tour-step { display: none; }
+@media (max-width: 700px) { .burn .tour { flex-wrap: wrap; gap: 10px; } }
+/* after a question, the "closest material" line keeps its full width (only the question line makes room for the tour controls) */
+@media (min-width: 900px) { .burn:not(.stand) .asked-line { padding-right: 0; max-width: 62ch; } }
