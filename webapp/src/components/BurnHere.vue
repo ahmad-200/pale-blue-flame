@@ -47,8 +47,8 @@ const link = name => `#/experiment/${experimentByName(name)?.id}`
     We will show you every fire NASA has lit with it, and whether any of them happened in that kind of air.</p>
   <section class="panel journey-panel">
     <h3>Where has anyone lit this fire?</h3>
-    <JourneyStrip :places="store.places" :place-id="placeId" :status="statusOf" :material="material" @pick="id => placeId = id" />
-    <p class="muted small">Every green dot is a real fire NASA lit with {{ material }}. A dashed flame means nobody has lit it there yet.
+    <JourneyStrip :places="store.places" :place-id="placeId" :status="statusOf" :material="material" :tests="withOxygen" @pick="id => placeId = id" />
+    <p class="muted small">Every green dot is a real fire NASA lit with {{ material }}; higher dots had more oxygen. A dashed flame means nobody has lit it there yet.
       Tap a place to choose it.</p>
   </section>
 

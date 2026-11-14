@@ -1,12 +1,14 @@
 <script setup>
 // Oxygen (up) against cabin pressure (across). Every material test is a dot; places are diamonds.
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { scaleLinear } from 'd3-scale'
 
 const props = defineProps({ tests: Array, material: String, places: Array, place: Object, region: Object })
 const W = 640, H = 380, L = 56, R = 20, T = 20, B = 48
 const P0 = 0.4, P1 = 1.1, O0 = 10, O1 = 40
-const x = p => L + (p - P0) / (P1 - P0) * (W - L - R)
-const y = o => T + (O1 - o) / (O1 - O0) * (H - T - B)
+const x = scaleLinear().domain([P0, P1]).range([L, W - R])
+const y = scaleLinear().domain([O0, O1]).range([H - T - B + T, T])
+const picked = ref(null)   // the dot someone tapped (works on phones, unlike a hover tooltip)
 
 // all tests sit at ~1 atm: spread them a little sideways so they do not hide each other
 const dots = computed(() => props.tests.filter(t => t.oxygen_pct != null).map((t, i) => ({
@@ -22,8 +24,8 @@ const groups = computed(() => {
   }
   return [...m.values()]
 })
-const xTicks = [0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1]
-const yTicks = [10, 15, 20, 25, 30, 35, 40]
+const xTicks = x.ticks(8)
+const yTicks = y.ticks(6)
 </script>
 
 <template>
@@ -47,13 +49,18 @@ const yTicks = [10, 15, 20, 25, 30, 35, 40]
           :height="y(region.min - 1) - y(region.max + 1)" class="region" />
 
     <circle v-for="(d, i) in dots" :key="i" :cx="d.cx" :cy="d.cy" :r="d.mine ? 5 : 3.5"
-            :class="d.mine ? 'dot mine' : 'dot other'">
+            :class="d.mine ? 'dot mine' : 'dot other'" @click="picked = d">
       <title>{{ d.t.experiment }} {{ d.t.test }}: {{ d.t.material }}, {{ d.t.oxygen_pct }}% oxygen</title>
     </circle>
 
     <g v-for="g in groups" :key="g.key" :class="g.ids.includes(place.id) ? 'place on' : 'place'">
       <rect :x="x(g.p) - 7" :y="y(g.o) - 7" width="14" height="14" :transform="`rotate(45 ${x(g.p)} ${y(g.o)})`" />
       <text :x="x(g.p) + 12" :y="y(g.o) - 8">{{ g.names.join(' / ') }}</text>
+    </g>
+    <g v-if="picked" class="pick" @click="picked = null">
+      <rect :x="Math.min(picked.cx + 8, W - 236)" :y="picked.cy - 44" width="228" height="40" rx="6" />
+      <text :x="Math.min(picked.cx + 8, W - 236) + 8" :y="picked.cy - 28">{{ picked.t.experiment }} {{ picked.t.test }} · {{ picked.t.oxygen_pct }}% oxygen</text>
+      <text :x="Math.min(picked.cx + 8, W - 236) + 8" :y="picked.cy - 12" class="sub">{{ picked.t.material }} (tap to close)</text>
     </g>
   </svg>
 </template>

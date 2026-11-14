@@ -74,3 +74,18 @@ select { width: 100%; margin-top: 6px; padding: 8px; background: var(--bg); colo
 details.map summary { cursor: pointer; color: var(--muted); font-size: 14px; text-transform: uppercase; letter-spacing: .06em; }
 details.map[open] summary { margin-bottom: 12px; }
 details.map { align-self: start; }
+
+.replay-panel { margin: 28px 0 8px; } .replay-panel p { line-height: 1.6; max-width: 820px; }
+.replay .sensors { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
+.replay .sensor { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+.replay .bulb { width: 16px; height: 16px; border-radius: 50%; background: var(--c);
+  opacity: calc(.2 + var(--h) * .8); box-shadow: 0 0 calc(var(--h) * 22px) var(--c); transition: opacity .15s, box-shadow .15s; }
+.replay .cta { margin-left: auto; border: 0; cursor: pointer; font: inherit; font-weight: 700; }
+.replay .cta:disabled { opacity: .7; cursor: default; }
+.replay-chart { width: 100%; height: auto; }
+.replay-chart .grid { stroke: var(--line); } .replay-chart .tick { fill: var(--muted); font-size: 11px; }
+.replay-chart .trace { fill: none; stroke-width: 2.5; } .replay-chart .cursor { stroke: var(--text); stroke-dasharray: 3 3; }
+.journey .fire-dot { transition: cx .6s, cy .6s; }
+.gapmap .dot { cursor: pointer; }
+.gapmap .pick rect { fill: var(--bg); stroke: var(--line); } .gapmap .pick text { fill: var(--text); font-size: 12px; }
+.gapmap .pick .sub { fill: var(--muted); font-size: 11px; }

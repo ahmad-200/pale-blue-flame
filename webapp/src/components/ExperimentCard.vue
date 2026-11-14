@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { store, experimentById } from '../data.js'
+import FireReplay from './FireReplay.vue'
 
 const props = defineProps({ id: String })
 const e = computed(() => experimentById(props.id))
@@ -28,6 +29,11 @@ const sections = [['objective', 'What they wanted to know'], ['approach', 'How t
       <p class="muted">We haven't written this part yet. Truth is, the results live mostly in the papers below, not in
         NASA's tables, and we want to read them before we sum them up.</p>
       <p v-if="tests.length">What we do have: <b>{{ tests.length }}</b> fires from this experiment in our table ({{ materials }}).</p>
+    </section>
+
+    <section v-if="e.id === 'PSI-98' && store.saffire" class="panel">
+      <h3>The fire, as its heat sensors saw it</h3>
+      <FireReplay :data="store.saffire" />
     </section>
 
     <section v-for="[k, label] in sections" :key="k" v-show="e[k]">

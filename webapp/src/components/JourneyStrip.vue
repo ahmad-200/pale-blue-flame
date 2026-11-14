@@ -1,7 +1,8 @@
 <script setup>
 // Earth -> Space Station -> airlock -> Moon base -> rover, drawn as a strip.
 // Each place shows whether NASA has ever burned the chosen material in its air.
-const props = defineProps({ places: Array, placeId: String, status: Function, material: String })
+import { beeswarm } from './useBeeswarm.js'
+const props = defineProps({ places: Array, placeId: String, status: Function, material: String, tests: Array })
 const emit = defineEmits(['pick'])
 
 // where each place sits on the strip (x across, y down), and how it is drawn
@@ -14,11 +15,8 @@ const SPOTS = {
 const stops = () => props.places.filter(p => SPOTS[p.id]).map(p => ({ ...p, ...SPOTS[p.id], st: props.status(p) }))
 const flame = (x, y, s = 1) => `M ${x} ${y - 26 * s} C ${x + 14 * s} ${y - 8 * s}, ${x + 12 * s} ${y + 10 * s}, ${x} ${y + 12 * s}
   C ${x - 12 * s} ${y + 10 * s}, ${x - 14 * s} ${y - 8 * s}, ${x} ${y - 26 * s} Z`
-// a few dots around a tested place: one per fire, at most 40, placed in a ring
-const dots = (s) => Array.from({ length: Math.min(s.st.count, 40) }, (_, i) => {
-  const a = i * 2.4, r = 44 + (i % 5) * 5
-  return { cx: s.x + Math.cos(a) * r, cy: s.y - 10 + Math.sin(a) * r * 0.55 }
-})
+// one dot per real fire beside a tested place, higher = more oxygen (D3 force layout, no overlaps)
+const dots = (s) => beeswarm(props.tests || [], s.x - 80, s.y - 6).map(n => ({ cx: n.x, cy: n.y, t: n.t }))
 </script>
 
 <template>
@@ -38,7 +36,13 @@ const dots = (s) => Array.from({ length: Math.min(s.st.count, 40) }, (_, i) => {
     <path d="M 150 150 Q 230 90 300 120 T 470 120 Q 600 110 700 175 T 860 205" class="route" />
 
     <g v-for="s in stops()" :key="s.id" class="stop" :class="{ on: s.id === placeId }" @click="emit('pick', s.id)">
-      <circle v-for="(d, i) in (s.st.tested ? dots(s) : [])" :key="i" :cx="d.cx" :cy="d.cy" r="3" class="fire-dot" />
+      <circle v-for="(d, i) in (s.st.tested ? dots(s) : [])" :key="d.t.experiment + d.t.test" :cx="d.cx" :cy="d.cy" r="3.2" class="fire-dot">
+        <title>{{ d.t.experiment }} {{ d.t.test }}: {{ d.t.oxygen_pct }}% oxygen</title>
+      </circle>
+      <g v-if="s.st.tested && tests && tests.length" class="small">
+        <text :x="s.x - 80" :y="s.y - 60" class="small" text-anchor="middle">↑ more O₂</text>
+        <text :x="s.x - 80" :y="s.y + 56" class="small" text-anchor="middle">less</text>
+      </g>
       <circle :cx="s.x" :cy="s.y" r="34" class="halo" />
       <!-- the place itself -->
       <g v-if="s.icon === 'station'">

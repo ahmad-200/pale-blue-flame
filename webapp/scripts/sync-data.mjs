@@ -9,7 +9,7 @@ const src = join(here, '..', '..', 'data')
 const out = join(here, '..', 'public', 'data')
 mkdirSync(out, { recursive: true })
 
-for (const f of ['experiments.json', 'places.json']) copyFileSync(join(src, f), join(out, f))
+for (const f of ['experiments.json', 'places.json', 'saffire1_sensors.json']) copyFileSync(join(src, f), join(out, f))
 
 function parseCsv(text) {
   const rows = []; let row = [], cell = '', quoted = false

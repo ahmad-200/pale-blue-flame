@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { store } from '../data.js'
+import FireReplay from './FireReplay.vue'
 
 const PILLARS = [
   { id: 'prevent', name: 'Prevent', text: 'Stop it starting: how things catch fire, and how fast a flame spreads.' },
@@ -28,6 +29,16 @@ const totalTests = computed(() => store.experiments.reduce((s, e) => s + e.test_
     </p>
     <p>We built one question on top of all of it.</p>
     <a href="#/burn" class="cta">Will it burn here? &rarr;</a>
+  </section>
+
+  <section class="panel replay-panel">
+    <h3>Watch a real fire</h3>
+    <p>This is not an animation we made up. A sheet of cotton and fiberglass fabric, almost a metre long, was set alight
+      on a cargo ship after it left the Space Station, with a gentle 20 cm/s breeze. Four heat sensors recorded it.
+      Press play: two sensors warm up first, then the other two, about two minutes later. That is the flame moving.</p>
+    <FireReplay :data="store.saffire" />
+    <p class="muted small">Saffire-I, NASA. Raw sensor values, about one reading every 30 seconds.
+      <a href="#/experiment/PSI-98">About this experiment</a></p>
   </section>
 
   <section>

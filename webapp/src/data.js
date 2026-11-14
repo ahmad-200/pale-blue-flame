@@ -1,13 +1,13 @@
 // Loads our own data files once (copied into public/data by scripts/sync-data.mjs).
 import { reactive } from 'vue'
 
-export const store = reactive({ ready: false, error: null, experiments: [], meta: {}, places: [], warning: null, tests: [] })
+export const store = reactive({ ready: false, error: null, experiments: [], meta: {}, places: [], warning: null, tests: [], saffire: null })
 
 export async function loadData() {
   try {
     const get = f => fetch(`./data/${f}`).then(r => { if (!r.ok) throw new Error(`${f}: ${r.status}`); return r.json() })
-    const [exp, places, tests] = await Promise.all([get('experiments.json'), get('places.json'), get('material_tests.json')])
-    Object.assign(store, { experiments: exp.experiments, meta: exp.meta, places: places.places, warning: places.warning, tests, ready: true })
+    const [exp, places, tests, saffire] = await Promise.all([get('experiments.json'), get('places.json'), get('material_tests.json'), get('saffire1_sensors.json')])
+    Object.assign(store, { experiments: exp.experiments, meta: exp.meta, places: places.places, warning: places.warning, tests, saffire, ready: true })
   } catch (e) {
     store.error = String(e)
   }
